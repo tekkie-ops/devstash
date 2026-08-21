@@ -9,14 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { collectionTypes, itemsInCollection } from "@/lib/dashboard";
-import type { Collection } from "@/lib/mock-data";
+import type { CollectionSummary } from "@/lib/db/collections";
 
 /** Card accent is the collection's dominant item type — see ItemTypeIcon on inline colors. */
-export function CollectionCard({ collection }: { collection: Collection }) {
-  const itemCount = itemsInCollection(collection.id).length;
-  const types = collectionTypes(collection.id);
-  const dominantType = types[0];
+export function CollectionCard({
+  collection,
+}: {
+  collection: CollectionSummary;
+}) {
+  const dominantType = collection.types[0];
 
   return (
     <Link href={`/collections/${collection.id}`} className="block">
@@ -35,7 +36,7 @@ export function CollectionCard({ collection }: { collection: Collection }) {
             )}
           </CardTitle>
           <CardDescription>
-            {itemCount} {itemCount === 1 ? "item" : "items"}
+            {collection.itemCount} {collection.itemCount === 1 ? "item" : "items"}
           </CardDescription>
         </CardHeader>
 
@@ -44,7 +45,7 @@ export function CollectionCard({ collection }: { collection: Collection }) {
             {collection.description}
           </p>
           <div className="flex items-center gap-2">
-            {types.map((type) => (
+            {collection.types.map((type) => (
               <ItemTypeIcon key={type.id} type={type} />
             ))}
           </div>

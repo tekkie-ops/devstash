@@ -1,6 +1,6 @@
 # Current Feature
 
-Seed Data — create a `prisma/seed.ts` script to populate the database with sample data for development and demos (demo user, all seven system item types, five collections with items).
+Dashboard Collections — replace the dummy collection data shown in the dashboard's main area with real data from the Neon database via Prisma, fetched directly in a server component.
 
 ## Status
 
@@ -8,29 +8,27 @@ Completed
 
 ## Goals
 
-- Demo `User`: email `demo@devstash.io`, name `Demo User`, password `12345678` hashed with `bcryptjs` (12 rounds), `isPro: false`, `emailVerified` set to the current date
-- All seven system `ItemType`s (snippet, prompt, command, note, file, image, link) with their spec'd icon/color, `isSystem: true`
-- Five `Collection`s with items, per the spec:
-  - React Patterns — 3 TypeScript snippets (hooks, component patterns, utility functions)
-  - AI Workflows — 3 prompts (code review, doc generation, refactoring assistance)
-  - DevOps — 1 snippet, 1 command, 2 links (real documentation URLs)
-  - Terminal Commands — 4 commands (git, docker, process management, package manager)
-  - Design Resources — 4 links (real URLs: CSS/Tailwind references, component libraries, design systems, icon libraries)
+- Create `src/lib/db/collections.ts` with data fetching functions
+- Fetch collections directly in the server component (replacing `src/lib/mock-data.ts` for this section)
+- Collection card border color derived from the most-used content type in that collection
+- Show small icons of all item types present in that collection
+- Keep the current design/layout — 6 cards of recent collections, same as today
+- Update the collection stats display
+- Do not add items underneath the collections yet — that comes later
 
 ## Notes
 
-- Reference spec: @context/features/seed-spec.md
-- Builds on the schema from the completed Prisma + Neon setup (@context/features/database-spec.md) — see its Implementation decisions below and the 2026-08-21 history entry.
-- Two Neon branches: a development branch (`DATABASE_URL`) and a production branch. Seeding should target the development branch.
+- Reference spec: @context/features/dashboard-collections-spec.md
+- Reference screenshot if needed: @context/screenshots/dashboard-ui-main.png — layout/design is already established, this is a data-source swap
+- Builds on the schema from the completed Prisma + Neon setup (@context/features/database-spec.md) and the seed data (@context/features/seed-spec.md) for realistic collections/items to query
 
 ### Implementation decisions
 
-- `bcryptjs` 3.0.3 ships its own types, so no `@types/bcryptjs` devDependency was needed (installed then removed once confirmed).
-- `prisma/seed.ts` reuses the `src/lib/prisma.ts` singleton (same pattern as `scripts/test-db.ts`), not a standalone client.
-- Prisma 7 moved seed configuration out of `package.json`'s `prisma.seed` field into `prisma.config.ts`'s `migrations.seed`; set it to `tsx prisma/seed.ts` and added `npm run db:seed` → `prisma db seed`.
-- `ItemType` has a `@@unique([userId, name])` with `userId` nullable — Prisma's generated compound-unique `where` input doesn't cleanly accept `null` for lookups, so system types are found with `findFirst({ where: { userId: null, name } })` + `create` instead of `upsert`.
-- All seeded items use `contentType: "text"` since the spec only calls for snippet/prompt/command/link items (no file/image).
-- The seed is idempotent for `User` (upsert by email) and system `ItemType`s (find-or-create), but **not** for collections/items — `createCollection` always creates new rows, so re-running the script duplicates collections and items. Worth revisiting if the seed needs to run repeatedly (e.g. after `prisma migrate reset`).
+- No auth is wired up yet, so `src/lib/db/collections.ts` scopes every query to the single seeded demo user (`demo@devstash.io`) rather than a session — revisit once NextAuth is in place.
+- `getRecentCollections` fetches each collection's `items -> item -> itemType` and derives item count and the most-used-first type list in memory, rather than a separate aggregate query — the dataset is small (demo/dev scale) and this keeps one query per call.
+- `ItemType` has no plural "label" field in the schema (unlike `mock-data.ts`'s `ItemType.label`), so the card badges' `aria-label` is derived with a `name + "s"` pluralization helper — correct for all seven system types, would need revisiting for a custom type with an irregular plural.
+- `ItemTypeIcon`/`ItemTypeTile` were decoupled from `mock-data`'s `ItemType` type to a minimal `IconableType` (`icon`/`color`/`label`) so they work with both the mock data (still used by items/sidebar) and the new DB-shaped collection types.
+- Only the "Collections" and "Favorite Collections" stats in `StatsCards` were switched to the database — "Items" and "Favorite Items" still read `mock-data`, since items aren't migrated in this feature.
 
 ## History
 
