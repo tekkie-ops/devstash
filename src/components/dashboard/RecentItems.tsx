@@ -1,13 +1,12 @@
 import { Clock } from "lucide-react";
 
 import { ItemRow } from "@/components/dashboard/ItemRow";
-import { byNewest } from "@/lib/dashboard";
-import { items } from "@/lib/mock-data";
+import { getRecentItems } from "@/lib/db/items";
 
 const RECENT_ITEM_LIMIT = 10;
 
-export function RecentItems() {
-  const recentItems = [...items].sort(byNewest).slice(0, RECENT_ITEM_LIMIT);
+export async function RecentItems() {
+  const recentItems = await getRecentItems(RECENT_ITEM_LIMIT);
 
   return (
     <section className="flex flex-col gap-4">

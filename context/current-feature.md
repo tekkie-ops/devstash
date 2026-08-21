@@ -1,6 +1,6 @@
 # Current Feature
 
-Dashboard Collections — replace the dummy collection data shown in the dashboard's main area with real data from the Neon database via Prisma, fetched directly in a server component.
+Dashboard Items — replace the dummy item data shown in the dashboard's main area (pinned and recent items) with real data from the Neon database via Prisma, fetched directly in a server component.
 
 ## Status
 
@@ -8,27 +8,26 @@ Completed
 
 ## Goals
 
-- Create `src/lib/db/collections.ts` with data fetching functions
-- Fetch collections directly in the server component (replacing `src/lib/mock-data.ts` for this section)
-- Collection card border color derived from the most-used content type in that collection
-- Show small icons of all item types present in that collection
-- Keep the current design/layout — 6 cards of recent collections, same as today
+- Create `src/lib/db/items.ts` with data fetching functions
+- Fetch items directly in the server component (replacing `src/lib/mock-data.ts` for this section)
+- Item card icon/border derived from the item type
+- Display item type tags and anything else currently shown (reference the screenshot if needed)
+- If there are no pinned items, nothing should display there
 - Update the collection stats display
-- Do not add items underneath the collections yet — that comes later
 
 ## Notes
 
-- Reference spec: @context/features/dashboard-collections-spec.md
+- Reference spec: @context/features/dashboard-items-spec.md
 - Reference screenshot if needed: @context/screenshots/dashboard-ui-main.png — layout/design is already established, this is a data-source swap
-- Builds on the schema from the completed Prisma + Neon setup (@context/features/database-spec.md) and the seed data (@context/features/seed-spec.md) for realistic collections/items to query
+- Builds on `src/lib/db/collections.ts` from the completed Dashboard Collections feature (@context/features/dashboard-collections-spec.md)
 
 ### Implementation decisions
 
-- No auth is wired up yet, so `src/lib/db/collections.ts` scopes every query to the single seeded demo user (`demo@devstash.io`) rather than a session — revisit once NextAuth is in place.
-- `getRecentCollections` fetches each collection's `items -> item -> itemType` and derives item count and the most-used-first type list in memory, rather than a separate aggregate query — the dataset is small (demo/dev scale) and this keeps one query per call.
-- `ItemType` has no plural "label" field in the schema (unlike `mock-data.ts`'s `ItemType.label`), so the card badges' `aria-label` is derived with a `name + "s"` pluralization helper — correct for all seven system types, would need revisiting for a custom type with an irregular plural.
-- `ItemTypeIcon`/`ItemTypeTile` were decoupled from `mock-data`'s `ItemType` type to a minimal `IconableType` (`icon`/`color`/`label`) so they work with both the mock data (still used by items/sidebar) and the new DB-shaped collection types.
-- Only the "Collections" and "Favorite Collections" stats in `StatsCards` were switched to the database — "Items" and "Favorite Items" still read `mock-data`, since items aren't migrated in this feature.
+- `src/lib/db/items.ts` mirrors `collections.ts`'s shape exactly (own `DEMO_USER_EMAIL`/`getDemoUserId`/`toLabel`), rather than extracting a shared helper module — keeps each db file self-contained, consistent with the existing pattern.
+- `ItemSummary.type` reuses `CollectionItemType` from `collections.ts` so `ItemTypeIcon`/`ItemTypeTile` need no changes.
+- Sorting/limiting for pinned and recent items is now done in the Prisma query (`orderBy`/`take`) instead of client-side `Array.sort`/`slice`, so `PinnedItems`/`RecentItems` are now async server components with no JS-side sorting.
+- `formatItemDate` in `src/lib/dashboard.ts` now takes a `Date` instead of an ISO string, since Prisma returns `Date` objects — its only caller (`ItemRow`) was updated accordingly.
+- `getItemType`/`itemsInCollection`/`collectionTypes`/`byNewest` in `src/lib/dashboard.ts` are now unused (their only callers were the mock-data-driven item components) but were left in place — `Sidebar.tsx` still depends on other `mock-data` exports (item counts, types, collections), so mock data and its helpers stay until that's migrated too; cleanup wasn't in scope for this feature.
 
 ## History
 
