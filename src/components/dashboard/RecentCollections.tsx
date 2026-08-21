@@ -1,15 +1,12 @@
 import Link from "next/link";
 
 import { CollectionCard } from "@/components/dashboard/CollectionCard";
-import { byNewest } from "@/lib/dashboard";
-import { collections } from "@/lib/mock-data";
+import { getRecentCollections } from "@/lib/db/collections";
 
 const RECENT_COLLECTION_LIMIT = 6;
 
-export function RecentCollections() {
-  const recentCollections = [...collections]
-    .sort(byNewest)
-    .slice(0, RECENT_COLLECTION_LIMIT);
+export async function RecentCollections() {
+  const recentCollections = await getRecentCollections(RECENT_COLLECTION_LIMIT);
 
   return (
     <section className="flex flex-col gap-4">

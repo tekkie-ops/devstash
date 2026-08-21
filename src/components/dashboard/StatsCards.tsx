@@ -1,7 +1,8 @@
 import { Files, FolderHeart, Folders, Star, type LucideIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { collections, items } from "@/lib/mock-data";
+import { getCollectionStats } from "@/lib/db/collections";
+import { items } from "@/lib/mock-data";
 
 interface Stat {
   label: string;
@@ -23,10 +24,12 @@ function StatCard({ label, value, icon: Icon }: Stat) {
   );
 }
 
-export function StatsCards() {
+export async function StatsCards() {
+  const collectionStats = await getCollectionStats();
+
   const stats: Stat[] = [
     { label: "Items", value: items.length, icon: Files },
-    { label: "Collections", value: collections.length, icon: Folders },
+    { label: "Collections", value: collectionStats.total, icon: Folders },
     {
       label: "Favorite Items",
       value: items.filter((item) => item.isFavorite).length,
@@ -34,7 +37,7 @@ export function StatsCards() {
     },
     {
       label: "Favorite Collections",
-      value: collections.filter((collection) => collection.isFavorite).length,
+      value: collectionStats.favorites,
       icon: FolderHeart,
     },
   ];
