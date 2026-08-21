@@ -1,6 +1,6 @@
 # Current Feature
 
-Prisma + Neon PostgreSQL Setup — set up Prisma ORM with a Neon PostgreSQL database. Infra-only: `src/lib/mock-data.ts` still powers the dashboard UI; wiring components to the database is a separate future feature.
+Seed Data — create a `prisma/seed.ts` script to populate the database with sample data for development and demos (demo user, all seven system item types, five collections with items).
 
 ## Status
 
@@ -8,27 +8,29 @@ Completed
 
 ## Goals
 
-- Use Neon PostgreSQL (serverless)
-- Create initial schema based on the data models in @context/project-overview.md (schema will evolve)
-- Include NextAuth models (Account, Session, VerificationToken)
-- Add appropriate indexes and cascade deletes
-- Use Prisma 7 (breaking changes vs. earlier versions — read the upgrade guide before implementing: https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
+- Demo `User`: email `demo@devstash.io`, name `Demo User`, password `12345678` hashed with `bcryptjs` (12 rounds), `isPro: false`, `emailVerified` set to the current date
+- All seven system `ItemType`s (snippet, prompt, command, note, file, image, link) with their spec'd icon/color, `isSystem: true`
+- Five `Collection`s with items, per the spec:
+  - React Patterns — 3 TypeScript snippets (hooks, component patterns, utility functions)
+  - AI Workflows — 3 prompts (code review, doc generation, refactoring assistance)
+  - DevOps — 1 snippet, 1 command, 2 links (real documentation URLs)
+  - Terminal Commands — 4 commands (git, docker, process management, package manager)
+  - Design Resources — 4 links (real URLs: CSS/Tailwind references, component libraries, design systems, icon libraries)
 
 ## Notes
 
-- Reference spec: @context/features/database-spec.md
-- Two Neon branches: a development branch (`DATABASE_URL`) and a production branch. Always create migrations via `prisma migrate dev` — never `db push` or hand-edit the DB, unless explicitly told otherwise.
-- Prisma quickstart reference: https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
+- Reference spec: @context/features/seed-spec.md
+- Builds on the schema from the completed Prisma + Neon setup (@context/features/database-spec.md) — see its Implementation decisions below and the 2026-08-21 history entry.
+- Two Neon branches: a development branch (`DATABASE_URL`) and a production branch. Seeding should target the development branch.
 
 ### Implementation decisions
 
-- Prisma 7.9.1 (current stable; 8 is only in RC). Prisma 7 requires `"type": "module"` in `package.json` and no longer bundles a Rust query engine — the schema uses `generator client { provider = "prisma-client" }`, output to `src/generated/prisma` (gitignored, regenerated via a new `postinstall: prisma generate` script).
-- Followed Neon's recommended setup: `@prisma/adapter-neon` (WebSocket driver) in `src/lib/prisma.ts`, using the pooled `DATABASE_URL` at runtime. `prisma.config.ts` points CLI/migration operations at a separate `DATABASE_URL_UNPOOLED` (direct connection) — the schema's `datasource` block has no `url`.
-- `DATABASE_URL_UNPOOLED` was derived from the pooled string by dropping `-pooler` from the hostname (Neon's standard convention) since only the pooled URL was on hand; migration ran successfully against it, confirming it's correct.
-- Schema mirrors the draft in @context/project-overview.md as-is, plus a `VerificationToken` model (required by NextAuth for email/passwordless flows, not in the draft) and `@@index` on all foreign keys.
-- `npm`'s script-execution guard blocked Prisma's install scripts (engine/binary downloads) until approved via `npm approve-scripts` — recorded in `package.json`'s `allowScripts`.
-- Did not install the `next-auth` package itself — the spec only asked for NextAuth-shaped models, not wiring up auth (a separate future feature).
-- Added `scripts/test-db.ts` (run via `npm run db:test`) to sanity-check the connection: a raw `SELECT 1` plus a `User` count. Requires `dotenv/config` as its first import since, unlike Next.js, a standalone script doesn't auto-load `.env`. Needed `tsx` (new devDependency) to execute a `.ts` file directly; its `esbuild` postinstall script also needed `npm approve-scripts`. Verified: connects and reports `User count: 0`.
+- `bcryptjs` 3.0.3 ships its own types, so no `@types/bcryptjs` devDependency was needed (installed then removed once confirmed).
+- `prisma/seed.ts` reuses the `src/lib/prisma.ts` singleton (same pattern as `scripts/test-db.ts`), not a standalone client.
+- Prisma 7 moved seed configuration out of `package.json`'s `prisma.seed` field into `prisma.config.ts`'s `migrations.seed`; set it to `tsx prisma/seed.ts` and added `npm run db:seed` → `prisma db seed`.
+- `ItemType` has a `@@unique([userId, name])` with `userId` nullable — Prisma's generated compound-unique `where` input doesn't cleanly accept `null` for lookups, so system types are found with `findFirst({ where: { userId: null, name } })` + `create` instead of `upsert`.
+- All seeded items use `contentType: "text"` since the spec only calls for snippet/prompt/command/link items (no file/image).
+- The seed is idempotent for `User` (upsert by email) and system `ItemType`s (find-or-create), but **not** for collections/items — `createCollection` always creates new rows, so re-running the script duplicates collections and items. Worth revisiting if the seed needs to run repeatedly (e.g. after `prisma migrate reset`).
 
 ## History
 
