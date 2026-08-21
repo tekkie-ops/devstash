@@ -18,18 +18,14 @@ import {
 } from "@/components/ui/sidebar";
 import { SidebarUser } from "@/components/dashboard/SidebarUser";
 import { ITEM_TYPE_ICONS } from "@/lib/icons";
-import { collections, items, itemTypes, type Collection } from "@/lib/mock-data";
+import {
+  getFavoriteCollections,
+  getRecentNonFavoriteCollections,
+  type CollectionSummary,
+} from "@/lib/db/collections";
+import { getItemTypesWithCounts } from "@/lib/db/items";
 
 const RECENT_COLLECTION_LIMIT = 5;
-
-function countItemsOfType(typeId: string) {
-  return items.filter((item) => item.typeId === typeId).length;
-}
-
-function countItemsInCollection(collectionId: string) {
-  return items.filter((item) => item.collectionIds.includes(collectionId))
-    .length;
-}
 
 /** Route for a type's item list, e.g. "Snippets" -> /items/snippets. */
 function itemTypeHref(label: string) {
@@ -40,7 +36,7 @@ function CollectionMenuItem({
   collection,
   children,
 }: {
-  collection: Collection;
+  collection: CollectionSummary;
   children: React.ReactNode;
 }) {
   return (
@@ -56,14 +52,13 @@ function CollectionMenuItem({
   );
 }
 
-export function Sidebar() {
-  const favoriteCollections = collections.filter(
-    (collection) => collection.isFavorite,
-  );
-  const recentCollections = collections
-    .filter((collection) => !collection.isFavorite)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    .slice(0, RECENT_COLLECTION_LIMIT);
+export async function Sidebar() {
+  const [itemTypes, favoriteCollections, recentCollections] =
+    await Promise.all([
+      getItemTypesWithCounts(),
+      getFavoriteCollections(),
+      getRecentNonFavoriteCollections(RECENT_COLLECTION_LIMIT),
+    ]);
 
   return (
     <SidebarShell collapsible="icon">
@@ -98,9 +93,7 @@ export function Sidebar() {
                         <span>{type.label}</span>
                       </Link>
                     </SidebarMenuButton>
-                    <SidebarMenuBadge>
-                      {countItemsOfType(type.id)}
-                    </SidebarMenuBadge>
+                    <SidebarMenuBadge>{type.itemCount}</SidebarMenuBadge>
                   </SidebarMenuItem>
                 );
               })}
@@ -134,9 +127,26 @@ export function Sidebar() {
             <SidebarMenu>
               {recentCollections.map((collection) => (
                 <CollectionMenuItem key={collection.id} collection={collection}>
-                  {countItemsInCollection(collection.id)}
+                  <span
+                    aria-hidden="true"
+                    className="block size-2.5 rounded-full"
+                    style={{
+                      backgroundColor:
+                        collection.types[0]?.color ?? "var(--sidebar-border)",
+                    }}
+                  />
                 </CollectionMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="View all collections">
+                  <Link
+                    href="/collections"
+                    className="text-sidebar-foreground/70"
+                  >
+                    <span>View all collections</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

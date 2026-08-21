@@ -39,6 +39,69 @@ async function getDemoUserId(): Promise<string | null> {
   return user?.id ?? null;
 }
 
+type CollectionWithItems = {
+  id: string;
+  name: string;
+  description: string | null;
+  isFavorite: boolean;
+  updatedAt: Date;
+  items: {
+    item: {
+      itemType: { id: string; name: string; icon: string; color: string };
+    };
+  }[];
+};
+
+/** Distinct item types present in the collection, most-used first. */
+function toCollectionSummary(collection: CollectionWithItems): CollectionSummary {
+  const typeCounts = new Map<
+    string,
+    { type: CollectionItemType; count: number }
+  >();
+
+  for (const { item } of collection.items) {
+    const existing = typeCounts.get(item.itemType.id);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      typeCounts.set(item.itemType.id, {
+        type: {
+          id: item.itemType.id,
+          name: item.itemType.name,
+          label: toLabel(item.itemType.name),
+          icon: item.itemType.icon,
+          color: item.itemType.color,
+        },
+        count: 1,
+      });
+    }
+  }
+
+  const types = [...typeCounts.values()]
+    .sort((a, b) => b.count - a.count)
+    .map(({ type }) => type);
+
+  return {
+    id: collection.id,
+    name: collection.name,
+    description: collection.description,
+    isFavorite: collection.isFavorite,
+    updatedAt: collection.updatedAt,
+    itemCount: collection.items.length,
+    types,
+  };
+}
+
+const COLLECTION_ITEMS_INCLUDE = {
+  items: {
+    include: {
+      item: {
+        include: { itemType: true },
+      },
+    },
+  },
+} as const;
+
 export async function getRecentCollections(
   limit: number,
 ): Promise<CollectionSummary[]> {
@@ -52,55 +115,45 @@ export async function getRecentCollections(
     where: { userId },
     orderBy: { updatedAt: "desc" },
     take: limit,
-    include: {
-      items: {
-        include: {
-          item: {
-            include: { itemType: true },
-          },
-        },
-      },
-    },
+    include: COLLECTION_ITEMS_INCLUDE,
   });
 
-  return collections.map((collection) => {
-    const typeCounts = new Map<
-      string,
-      { type: CollectionItemType; count: number }
-    >();
+  return collections.map(toCollectionSummary);
+}
 
-    for (const { item } of collection.items) {
-      const existing = typeCounts.get(item.itemType.id);
-      if (existing) {
-        existing.count += 1;
-      } else {
-        typeCounts.set(item.itemType.id, {
-          type: {
-            id: item.itemType.id,
-            name: item.itemType.name,
-            label: toLabel(item.itemType.name),
-            icon: item.itemType.icon,
-            color: item.itemType.color,
-          },
-          count: 1,
-        });
-      }
-    }
+export async function getFavoriteCollections(): Promise<CollectionSummary[]> {
+  const userId = await getDemoUserId();
 
-    const types = [...typeCounts.values()]
-      .sort((a, b) => b.count - a.count)
-      .map(({ type }) => type);
+  if (!userId) {
+    return [];
+  }
 
-    return {
-      id: collection.id,
-      name: collection.name,
-      description: collection.description,
-      isFavorite: collection.isFavorite,
-      updatedAt: collection.updatedAt,
-      itemCount: collection.items.length,
-      types,
-    };
+  const collections = await prisma.collection.findMany({
+    where: { userId, isFavorite: true },
+    orderBy: { updatedAt: "desc" },
+    include: COLLECTION_ITEMS_INCLUDE,
   });
+
+  return collections.map(toCollectionSummary);
+}
+
+export async function getRecentNonFavoriteCollections(
+  limit: number,
+): Promise<CollectionSummary[]> {
+  const userId = await getDemoUserId();
+
+  if (!userId) {
+    return [];
+  }
+
+  const collections = await prisma.collection.findMany({
+    where: { userId, isFavorite: false },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    include: COLLECTION_ITEMS_INCLUDE,
+  });
+
+  return collections.map(toCollectionSummary);
 }
 
 export async function getCollectionStats(): Promise<{

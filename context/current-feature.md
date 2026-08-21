@@ -1,6 +1,6 @@
 # Current Feature
 
-Dashboard Items — replace the dummy item data shown in the dashboard's main area (pinned and recent items) with real data from the Neon database via Prisma, fetched directly in a server component.
+Stats & Sidebar — replace the dashboard's stats cards and sidebar (item types, collections list) with real data from the Neon database via Prisma, finishing the migration off `src/lib/mock-data.ts`.
 
 ## Status
 
@@ -8,30 +8,29 @@ Completed
 
 ## Goals
 
-- Create `src/lib/db/items.ts` with data fetching functions
-- Fetch items directly in the server component (replacing `src/lib/mock-data.ts` for this section)
-- Item card icon/border derived from the item type
-- Display item type tags and anything else currently shown (reference the screenshot if needed)
-- If there are no pinned items, nothing should display there
-- Update the collection stats display
+- Display stats pertaining to database data, keeping the current design/layout
+- Display item types in sidebar with their icons, linking to `/items/[typename]`
+- Add "View all collections" link under the collections list that goes to `/collections`
+- Keep the star icons for favorite collections but for recents, each collection should show a colored circle based on the most-used item type in that collection
+- Create `src/lib/db/items.ts` and add the database functions — use `src/lib/db/collections.ts` for reference if needed
 
 ## Notes
 
-- Reference spec: @context/features/dashboard-items-spec.md
-- Reference screenshot if needed: @context/screenshots/dashboard-ui-main.png — layout/design is already established, this is a data-source swap
-- Builds on `src/lib/db/collections.ts` from the completed Dashboard Collections feature (@context/features/dashboard-collections-spec.md)
+- Reference spec: @context/features/stats-sidebar-spec.md
+- Reference: @src/lib/db/collections.ts
 
 ### Implementation decisions
 
-- `src/lib/db/items.ts` mirrors `collections.ts`'s shape exactly (own `DEMO_USER_EMAIL`/`getDemoUserId`/`toLabel`), rather than extracting a shared helper module — keeps each db file self-contained, consistent with the existing pattern.
-- `ItemSummary.type` reuses `CollectionItemType` from `collections.ts` so `ItemTypeIcon`/`ItemTypeTile` need no changes.
-- Sorting/limiting for pinned and recent items is now done in the Prisma query (`orderBy`/`take`) instead of client-side `Array.sort`/`slice`, so `PinnedItems`/`RecentItems` are now async server components with no JS-side sorting.
-- `formatItemDate` in `src/lib/dashboard.ts` now takes a `Date` instead of an ISO string, since Prisma returns `Date` objects — its only caller (`ItemRow`) was updated accordingly.
-- `getItemType`/`itemsInCollection`/`collectionTypes`/`byNewest` in `src/lib/dashboard.ts` are now unused (their only callers were the mock-data-driven item components) but were left in place — `Sidebar.tsx` still depends on other `mock-data` exports (item counts, types, collections), so mock data and its helpers stay until that's migrated too; cleanup wasn't in scope for this feature.
+- `src/lib/db/items.ts`'s `getItemTypesWithCounts` sorts by a fixed `SYSTEM_TYPE_ORDER` array rather than a DB `orderBy`, since `ItemType` has no ordering column and `cuid()` ids aren't reliably time-sortable — this pins the sidebar's type order to the canonical list in `project-overview.md` regardless of row insertion order.
+- `src/lib/db/collections.ts`'s per-collection dominant-type aggregation (previously inline in `getRecentCollections`) was extracted into a shared `toCollectionSummary` helper, reused by the two new functions `getFavoriteCollections` and `getRecentNonFavoriteCollections` — avoids duplicating the type-counting logic three times.
+- `Sidebar.tsx` is now an async server component (previously sync, reading `mock-data` directly); its Recent Collections rows now render a colored circle (`collection.types[0]?.color`) instead of an item-count badge, per spec — Favorites rows keep the star icon/badge unchanged.
+- `SidebarUser.tsx` still reads `currentUser` from `mock-data` (name/email/avatar) — that's user-profile data, out of scope for this spec, so it and `mock-data.ts` stay in place.
 
 ## History
 
 <!-- Keep this updated. Earliest to latest -->
+
+- 2026-08-21: Completed Stats & Sidebar (@context/features/stats-sidebar-spec.md) (`c207230`). Added `getItemTypesWithCounts` to `src/lib/db/items.ts`, returning the seven system item types with real per-type item counts for the demo user, ordered by a fixed `SYSTEM_TYPE_ORDER` list since `ItemType` has no ordering column and `cuid()` ids aren't reliably time-sortable. Extracted `toCollectionSummary` out of `getRecentCollections` in `src/lib/db/collections.ts` and reused it in two new functions, `getFavoriteCollections` and `getRecentNonFavoriteCollections`. `Sidebar.tsx` is now an async server component querying all three instead of reading `mock-data`; its Recent Collections rows show a colored circle (dominant item type's color) instead of an item-count badge, while Favorites rows keep the star badge unchanged. Added a "View all collections" link under the collections list, pointing at `/collections`. `SidebarUser.tsx` still reads `currentUser` from `mock-data` for the profile name/email/avatar — out of scope for this spec, so `mock-data.ts` stays in place. Verified against the seeded dev database via the server-rendered HTML: type counts (4/3/5/0/0/0/6 for snippet/prompt/command/note/file/image/link) matched the seed data, all five Recent Collections rows rendered distinct dominant-type colors, the new link was present, and the Favorites group correctly stayed hidden since no seeded collection is marked favorite. Build and lint passed.
 
 - 2026-08-21: Completed Dashboard Items (@context/features/dashboard-items-spec.md) (`0c9a461`). Added `src/lib/db/items.ts` with `getPinnedItems`, `getRecentItems` and `getItemStats`, scoped to the seeded demo user, mirroring `collections.ts`'s pattern. `PinnedItems.tsx`/`RecentItems.tsx` are now async server components querying Prisma directly, with sorting/limiting pushed into the query instead of client-side `Array.sort`/`slice`; `ItemRow.tsx` consumes the new `ItemSummary` shape (type-derived icon/border, real tags, real dates) instead of resolving `typeId` against mock data. `StatsCards.tsx`'s Items/Favorite Items stats now come from the database too, so all four stat cards are DB-backed. `formatItemDate` was changed to take a `Date` instead of an ISO string since Prisma returns `Date` objects. One thing worth knowing: `getItemType`/`itemsInCollection`/`collectionTypes`/`byNewest` in `src/lib/dashboard.ts` are now unused but left in place, since `Sidebar.tsx` still depends on other `mock-data` exports and hasn't been migrated yet. Verified against the seeded dev database via the server-rendered HTML: 18 items / 5 collections stat counts, real item titles/dates/tags, correct per-type border colors, and the Pinned section correctly absent since no seeded items are pinned. Build and lint passed.
 
