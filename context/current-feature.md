@@ -1,22 +1,40 @@
 # Current Feature
 
-<!-- Feature name and short description -->
+Prisma + Neon PostgreSQL Setup — set up Prisma ORM with a Neon PostgreSQL database. Infra-only: `src/lib/mock-data.ts` still powers the dashboard UI; wiring components to the database is a separate future feature.
 
 ## Status
 
-<!-- Not Started | In Progress | Completed -->
+Completed
 
 ## Goals
 
-<!-- Goals and requirements -->
+- Use Neon PostgreSQL (serverless)
+- Create initial schema based on the data models in @context/project-overview.md (schema will evolve)
+- Include NextAuth models (Account, Session, VerificationToken)
+- Add appropriate indexes and cascade deletes
+- Use Prisma 7 (breaking changes vs. earlier versions — read the upgrade guide before implementing: https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
 
 ## Notes
 
-<!-- Any extra notes -->
+- Reference spec: @context/features/database-spec.md
+- Two Neon branches: a development branch (`DATABASE_URL`) and a production branch. Always create migrations via `prisma migrate dev` — never `db push` or hand-edit the DB, unless explicitly told otherwise.
+- Prisma quickstart reference: https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
+
+### Implementation decisions
+
+- Prisma 7.9.1 (current stable; 8 is only in RC). Prisma 7 requires `"type": "module"` in `package.json` and no longer bundles a Rust query engine — the schema uses `generator client { provider = "prisma-client" }`, output to `src/generated/prisma` (gitignored, regenerated via a new `postinstall: prisma generate` script).
+- Followed Neon's recommended setup: `@prisma/adapter-neon` (WebSocket driver) in `src/lib/prisma.ts`, using the pooled `DATABASE_URL` at runtime. `prisma.config.ts` points CLI/migration operations at a separate `DATABASE_URL_UNPOOLED` (direct connection) — the schema's `datasource` block has no `url`.
+- `DATABASE_URL_UNPOOLED` was derived from the pooled string by dropping `-pooler` from the hostname (Neon's standard convention) since only the pooled URL was on hand; migration ran successfully against it, confirming it's correct.
+- Schema mirrors the draft in @context/project-overview.md as-is, plus a `VerificationToken` model (required by NextAuth for email/passwordless flows, not in the draft) and `@@index` on all foreign keys.
+- `npm`'s script-execution guard blocked Prisma's install scripts (engine/binary downloads) until approved via `npm approve-scripts` — recorded in `package.json`'s `allowScripts`.
+- Did not install the `next-auth` package itself — the spec only asked for NextAuth-shaped models, not wiring up auth (a separate future feature).
+- Added `scripts/test-db.ts` (run via `npm run db:test`) to sanity-check the connection: a raw `SELECT 1` plus a `User` count. Requires `dotenv/config` as its first import since, unlike Next.js, a standalone script doesn't auto-load `.env`. Needed `tsx` (new devDependency) to execute a `.ts` file directly; its `esbuild` postinstall script also needed `npm approve-scripts`. Verified: connects and reports `User count: 0`.
 
 ## History
 
 <!-- Keep this updated. Earliest to latest -->
+
+- 2026-08-21: Completed Prisma + Neon PostgreSQL Setup (@context/features/database-spec.md) (`eec9de3`). Prisma 7.9.1 schema (`prisma/schema.prisma`) covering `User`, `Account`, `Session`, `VerificationToken`, `ItemType`, `Item`, `Collection`, `ItemCollection`, `Tag`, `ItemTag` — mirrors the `project-overview.md` draft plus `VerificationToken` (required by NextAuth, not in the draft) and `@@index` on every foreign key. Uses Neon's recommended `@prisma/adapter-neon` (WebSocket driver): `src/lib/prisma.ts` is a dev-mode singleton on the pooled `DATABASE_URL`, while `prisma.config.ts` points CLI/migration commands at a direct `DATABASE_URL_UNPOOLED` (schema's `datasource` has no `url`). First migration (`prisma/migrations/20260821152535_init`) applied and confirmed in sync via `prisma migrate status`. Added `scripts/test-db.ts` (`npm run db:test`) as a connection smoke test. Infra-only — `src/lib/mock-data.ts` still powers the dashboard; wiring components to the database is a separate future feature. Two things worth knowing: Prisma 7 forced `"type": "module"` into `package.json` and dropped its bundled Rust query engine (client output now generated to gitignored `src/generated/prisma` via a `postinstall: prisma generate` script); and `DATABASE_URL_UNPOOLED` was derived from the given pooled connection string by dropping `-pooler` from the hostname (Neon's standard convention), confirmed correct when the migration ran successfully. Build and lint passed.
 
 - 2026-08-19: Initial Next.js + Tailwind CSS v4 project setup (`aaf1da7`), pushed to `origin/master`.
 - 2026-08-20: Added dashboard UI screenshots as a design reference and linked them from the UI/UX section of `project-overview.md` (`9701c69`).
