@@ -37,6 +37,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
-export function formatItemDate(iso: string): string {
-  return dateFormatter.format(new Date(iso));
+export function formatItemDate(date: Date): string {
+  return dateFormatter.format(date);
 }

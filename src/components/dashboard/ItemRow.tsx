@@ -2,22 +2,20 @@ import { Pin, Star } from "lucide-react";
 
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
 import { Badge } from "@/components/ui/badge";
-import { formatItemDate, getItemType } from "@/lib/dashboard";
-import type { Item } from "@/lib/mock-data";
+import { formatItemDate } from "@/lib/dashboard";
+import type { ItemSummary } from "@/lib/db/items";
 
 /**
  * Not clickable yet — items open in the quick-access drawer, which is a later
  * feature. Row accent is the item's type color.
  */
-export function ItemRow({ item }: { item: Item }) {
-  const type = getItemType(item.typeId);
-
+export function ItemRow({ item }: { item: ItemSummary }) {
   return (
     <article
       className="flex items-start gap-3 rounded-xl border border-l-2 bg-card p-4 transition-colors hover:bg-accent/40"
-      style={type ? { borderLeftColor: type.color } : undefined}
+      style={{ borderLeftColor: item.type.color }}
     >
-      {type && <ItemTypeTile type={type} />}
+      <ItemTypeTile type={item.type} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -52,7 +50,7 @@ export function ItemRow({ item }: { item: Item }) {
       </div>
 
       <time
-        dateTime={item.updatedAt}
+        dateTime={item.updatedAt.toISOString()}
         className="shrink-0 text-xs text-muted-foreground"
       >
         {formatItemDate(item.updatedAt)}
