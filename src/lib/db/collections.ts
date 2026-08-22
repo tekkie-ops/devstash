@@ -1,10 +1,5 @@
 import { prisma } from "@/lib/prisma";
-
-/**
- * No auth is wired up yet (see project-overview.md open questions), so every
- * dashboard query is scoped to the single seeded demo user for now.
- */
-const DEMO_USER_EMAIL = "demo@devstash.io";
+import { getDemoUserId } from "@/lib/db/user";
 
 export interface CollectionItemType {
   id: string;
@@ -28,15 +23,6 @@ export interface CollectionSummary {
 /** e.g. "snippet" -> "Snippets", matching the plural labels used elsewhere in the UI. */
 function toLabel(name: string): string {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)}s`;
-}
-
-async function getDemoUserId(): Promise<string | null> {
-  const user = await prisma.user.findUnique({
-    where: { email: DEMO_USER_EMAIL },
-    select: { id: true },
-  });
-
-  return user?.id ?? null;
 }
 
 type CollectionWithItems = {
