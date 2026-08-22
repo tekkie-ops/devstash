@@ -1,30 +1,30 @@
-# Current Feature
+# Current Feature: Add Pro Badge to Sidebar
 
-Stats & Sidebar — replace the dashboard's stats cards and sidebar (item types, collections list) with real data from the Neon database via Prisma, finishing the migration off `src/lib/mock-data.ts`.
+Add a "PRO" badge next to the File and Image item types in the sidebar, using ShadCN's badge component.
 
 ## Status
 
-Completed
+In Progress
 
 ## Goals
 
-- Display stats pertaining to database data, keeping the current design/layout
-- Display item types in sidebar with their icons, linking to `/items/[typename]`
-- Add "View all collections" link under the collections list that goes to `/collections`
-- Keep the star icons for favorite collections but for recents, each collection should show a colored circle based on the most-used item type in that collection
-- Create `src/lib/db/items.ts` and add the database functions — use `src/lib/db/collections.ts` for reference if needed
+- Add a badge to the `file` and `image` type rows in the sidebar
+- Use the ShadCN UI `badge` component
+- Badge text reads "PRO" (all uppercase)
+- Keep the badge visually clean and subtle (not loud/attention-grabbing)
 
 ## Notes
 
-- Reference spec: @context/features/stats-sidebar-spec.md
-- Reference: @src/lib/db/collections.ts
+- Reference spec: @context/features/add-pro-badge-sidebar.md
+- Relevant file: `src/components/dashboard/Sidebar.tsx` (renders the Types group item rows)
+- Per `project-overview.md`, `file` and `image` are the two Pro-tier system types (all others are Free)
+- `project-overview.md` §7 notes all users currently get full access during development regardless of `isPro` — this badge is a visual/UI-only indicator, not a gate
 
 ### Implementation decisions
 
-- `src/lib/db/items.ts`'s `getItemTypesWithCounts` sorts by a fixed `SYSTEM_TYPE_ORDER` array rather than a DB `orderBy`, since `ItemType` has no ordering column and `cuid()` ids aren't reliably time-sortable — this pins the sidebar's type order to the canonical list in `project-overview.md` regardless of row insertion order.
-- `src/lib/db/collections.ts`'s per-collection dominant-type aggregation (previously inline in `getRecentCollections`) was extracted into a shared `toCollectionSummary` helper, reused by the two new functions `getFavoriteCollections` and `getRecentNonFavoriteCollections` — avoids duplicating the type-counting logic three times.
-- `Sidebar.tsx` is now an async server component (previously sync, reading `mock-data` directly); its Recent Collections rows now render a colored circle (`collection.types[0]?.color`) instead of an item-count badge, per spec — Favorites rows keep the star icon/badge unchanged.
-- `SidebarUser.tsx` still reads `currentUser` from `mock-data` (name/email/avatar) — that's user-profile data, out of scope for this spec, so it and `mock-data.ts` stay in place.
+- Added a `PRO_TYPE_NAMES` set (`"file"`, `"image"`) in `Sidebar.tsx`, checked against `type.name` (the lowercase system-type name from `getItemTypesWithCounts`, not the pluralized `label` used for display/routing).
+- The badge renders as a sibling of the label `<span>` inside the type's `Link`, not in the `SidebarMenuBadge` slot — that slot already holds the per-type item count, and it's absolutely positioned (`right-1`) so a second badge there would overlap it.
+- Used the ShadCN `Badge` `outline` variant (border only, no fill) sized down to `h-4`/`text-[10px]`/`text-muted-foreground` for a subtle look distinct from the primary-colored count badge.
 
 ## History
 
