@@ -1,16 +1,24 @@
-# Current Feature
+# Current Feature: Codebase Cleanup Quick Wins
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
+Low-risk cleanup items from the 2026-08-22 codebase audit (auth-related and schema/migration-touching items excluded — see Notes):
 
+1. Remove dead code in `src/lib/dashboard.ts` — `getItemType`, `itemsInCollection`, `collectionTypes`, `byNewest` are unused exports left over from the pre-Prisma `mock-data.ts` era.
+2. Dedupe `getDemoUserId()` — it's called independently in nearly every function in `src/lib/db/collections.ts` and `src/lib/db/items.ts`, causing ~8 redundant lookups of the same user row on a single dashboard load. Wrap it in React's `cache()` (or resolve once and pass down).
+3. Split up `src/components/dashboard/Sidebar.tsx` — the `Sidebar()` server component is ~115 lines (past the 50-line guideline) and mixes brand header, Types nav, Favorites nav, Recent Collections nav, and footer. Extract into focused subcomponents (e.g. `SidebarTypesNav`, `SidebarCollectionsNav`).
 
 ## Notes
 
-
+Excluded from this pass as not "little to no risk":
+- Authentication is not implemented yet — out of scope entirely.
+- `ContentType` enum missing a `url` value + seed script mismatch for `link` items — fixable, but nothing reads the field yet, and a schema change is more than a quick win.
+- `ItemType` partial unique index for system types — requires a raw-SQL migration.
+- Collection queries fetching all items instead of using `_count`/`groupBy` — a real query-shape change, holding off until it matters at scale.
 
 ## History
 
