@@ -1,24 +1,16 @@
-# Current Feature: Codebase Cleanup Quick Wins
+# Current Feature
 
 ## Status
 
-In Progress
+
 
 ## Goals
 
-Low-risk cleanup items from the 2026-08-22 codebase audit (auth-related and schema/migration-touching items excluded — see Notes):
 
-1. Remove dead code in `src/lib/dashboard.ts` — `getItemType`, `itemsInCollection`, `collectionTypes`, `byNewest` are unused exports left over from the pre-Prisma `mock-data.ts` era.
-2. Dedupe `getDemoUserId()` — it's called independently in nearly every function in `src/lib/db/collections.ts` and `src/lib/db/items.ts`, causing ~8 redundant lookups of the same user row on a single dashboard load. Wrap it in React's `cache()` (or resolve once and pass down).
-3. Split up `src/components/dashboard/Sidebar.tsx` — the `Sidebar()` server component is ~115 lines (past the 50-line guideline) and mixes brand header, Types nav, Favorites nav, Recent Collections nav, and footer. Extract into focused subcomponents (e.g. `SidebarTypesNav`, `SidebarCollectionsNav`).
 
 ## Notes
 
-Excluded from this pass as not "little to no risk":
-- Authentication is not implemented yet — out of scope entirely.
-- `ContentType` enum missing a `url` value + seed script mismatch for `link` items — fixable, but nothing reads the field yet, and a schema change is more than a quick win.
-- `ItemType` partial unique index for system types — requires a raw-SQL migration.
-- Collection queries fetching all items instead of using `_count`/`groupBy` — a real query-shape change, holding off until it matters at scale.
+
 
 ## History
 
@@ -43,3 +35,5 @@ Excluded from this pass as not "little to no risk":
 - 2026-08-21: Completed Stats & Sidebar (@context/features/stats-sidebar-spec.md) (`c207230`). Added `getItemTypesWithCounts` to `src/lib/db/items.ts`, returning the seven system item types with real per-type item counts for the demo user, ordered by a fixed `SYSTEM_TYPE_ORDER` list since `ItemType` has no ordering column and `cuid()` ids aren't reliably time-sortable. Extracted `toCollectionSummary` out of `getRecentCollections` in `src/lib/db/collections.ts` and reused it in two new functions, `getFavoriteCollections` and `getRecentNonFavoriteCollections`. `Sidebar.tsx` is now an async server component querying all three instead of reading `mock-data`; its Recent Collections rows show a colored circle (dominant item type's color) instead of an item-count badge, while Favorites rows keep the star badge unchanged. Added a "View all collections" link under the collections list, pointing at `/collections`. `SidebarUser.tsx` still reads `currentUser` from `mock-data` for the profile name/email/avatar — out of scope for this spec, so `mock-data.ts` stays in place. Verified against the seeded dev database via the server-rendered HTML: type counts (4/3/5/0/0/0/6 for snippet/prompt/command/note/file/image/link) matched the seed data, all five Recent Collections rows rendered distinct dominant-type colors, the new link was present, and the Favorites group correctly stayed hidden since no seeded collection is marked favorite. Build and lint passed.
 
 - 2026-08-22: Completed Add Pro Badge to Sidebar (@context/features/add-pro-badge-sidebar.md) (`65222bb`). Added a subtle "PRO" badge (ShadCN `Badge`, `outline` variant) next to the File and Image rows in the sidebar's Types group, in `src/components/dashboard/Sidebar.tsx`. A `PRO_TYPE_NAMES` set (`"file"`, `"image"`) is checked against each type's lowercase `name` (not the pluralized `label` used for display/routing), and the badge renders inline next to the label inside the type's `Link` rather than in the `SidebarMenuBadge` slot — that slot already holds the per-type item count and is absolutely positioned to the row's right edge, so a second badge there would have overlapped it. Sized down (`h-4`/`text-[10px]`/`text-muted-foreground`) to stay visually subtle and distinct from the primary-colored count badge. Verified against the already-running dev server's rendered HTML: the badge appears only on Files/Images, not the other five types. Build and lint passed.
+
+- 2026-08-22: Completed Codebase Cleanup Quick Wins (`ff56e5b`). Three low-risk fixes picked from that day's codebase-scanner audit, excluding auth (not implemented yet) and anything touching the Prisma schema/migrations. Removed four unused exports (`getItemType`, `itemsInCollection`, `collectionTypes`, `byNewest`) from `src/lib/dashboard.ts`, left over from the pre-Prisma `mock-data.ts` era — only `formatItemDate` remains. Extracted the duplicated `getDemoUserId()` (previously defined separately in both `src/lib/db/collections.ts` and `src/lib/db/items.ts`) into a single `src/lib/db/user.ts`, wrapped in React's `cache()` so a dashboard load no longer re-queries the same demo user row from every section. Split `Sidebar.tsx` (~115 lines) into `SidebarTypesNav.tsx` and `SidebarCollectionsNav.tsx` — a pure extraction with no behavior change; `Sidebar.tsx` now just fetches data and composes the shell plus these two. `toLabel`'s duplication between `collections.ts` and `items.ts` was left as-is since it wasn't in scope. Verified against the seeded dev database via the server-rendered dashboard HTML (200 response, sidebar sections all present). Build and lint passed.
