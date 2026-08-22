@@ -22,6 +22,8 @@ npm run dev      # start dev server (http://localhost:3000)
 npm run build    # production build
 npm run start    # serve production build
 npm run lint     # eslint (flat config: eslint.config.mjs)
+npm run db:test  # Prisma/Neon connection smoke test
+npm run db:seed  # seed the database (prisma db seed)
 ```
 
 No test runner is configured yet.
