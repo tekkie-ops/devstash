@@ -1,34 +1,22 @@
-# Current Feature: Add Pro Badge to Sidebar
-
-Add a "PRO" badge next to the File and Image item types in the sidebar, using ShadCN's badge component.
+# Current Feature
 
 ## Status
 
-In Progress
+
 
 ## Goals
 
-- Add a badge to the `file` and `image` type rows in the sidebar
-- Use the ShadCN UI `badge` component
-- Badge text reads "PRO" (all uppercase)
-- Keep the badge visually clean and subtle (not loud/attention-grabbing)
+
 
 ## Notes
 
-- Reference spec: @context/features/add-pro-badge-sidebar.md
-- Relevant file: `src/components/dashboard/Sidebar.tsx` (renders the Types group item rows)
-- Per `project-overview.md`, `file` and `image` are the two Pro-tier system types (all others are Free)
-- `project-overview.md` §7 notes all users currently get full access during development regardless of `isPro` — this badge is a visual/UI-only indicator, not a gate
 
-### Implementation decisions
-
-- Added a `PRO_TYPE_NAMES` set (`"file"`, `"image"`) in `Sidebar.tsx`, checked against `type.name` (the lowercase system-type name from `getItemTypesWithCounts`, not the pluralized `label` used for display/routing).
-- The badge renders as a sibling of the label `<span>` inside the type's `Link`, not in the `SidebarMenuBadge` slot — that slot already holds the per-type item count, and it's absolutely positioned (`right-1`) so a second badge there would overlap it.
-- Used the ShadCN `Badge` `outline` variant (border only, no fill) sized down to `h-4`/`text-[10px]`/`text-muted-foreground` for a subtle look distinct from the primary-colored count badge.
 
 ## History
 
 <!-- Keep this updated. Earliest to latest -->
+
+- 2026-08-22: Completed Add Pro Badge to Sidebar (@context/features/add-pro-badge-sidebar.md) (`65222bb`). Added a subtle "PRO" badge (ShadCN `Badge`, `outline` variant) next to the File and Image rows in the sidebar's Types group, in `src/components/dashboard/Sidebar.tsx`. A `PRO_TYPE_NAMES` set (`"file"`, `"image"`) is checked against each type's lowercase `name` (not the pluralized `label` used for display/routing), and the badge renders inline next to the label inside the type's `Link` rather than in the `SidebarMenuBadge` slot — that slot already holds the per-type item count and is absolutely positioned to the row's right edge, so a second badge there would have overlapped it. Sized down (`h-4`/`text-[10px]`/`text-muted-foreground`) to stay visually subtle and distinct from the primary-colored count badge. Verified against the already-running dev server's rendered HTML: the badge appears only on Files/Images, not the other five types. Build and lint passed.
 
 - 2026-08-21: Completed Stats & Sidebar (@context/features/stats-sidebar-spec.md) (`c207230`). Added `getItemTypesWithCounts` to `src/lib/db/items.ts`, returning the seven system item types with real per-type item counts for the demo user, ordered by a fixed `SYSTEM_TYPE_ORDER` list since `ItemType` has no ordering column and `cuid()` ids aren't reliably time-sortable. Extracted `toCollectionSummary` out of `getRecentCollections` in `src/lib/db/collections.ts` and reused it in two new functions, `getFavoriteCollections` and `getRecentNonFavoriteCollections`. `Sidebar.tsx` is now an async server component querying all three instead of reading `mock-data`; its Recent Collections rows show a colored circle (dominant item type's color) instead of an item-count badge, while Favorites rows keep the star badge unchanged. Added a "View all collections" link under the collections list, pointing at `/collections`. `SidebarUser.tsx` still reads `currentUser` from `mock-data` for the profile name/email/avatar — out of scope for this spec, so `mock-data.ts` stays in place. Verified against the seeded dev database via the server-rendered HTML: type counts (4/3/5/0/0/0/6 for snippet/prompt/command/note/file/image/link) matched the seed data, all five Recent Collections rows rendered distinct dominant-type colors, the new link was present, and the Favorites group correctly stayed hidden since no seeded collection is marked favorite. Build and lint passed.
 
