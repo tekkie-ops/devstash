@@ -1,23 +1,14 @@
-# Current Feature: Auth Credentials - Email/Password Provider
+# Current Feature
 
 ## Status
 
-In Progress
+
 
 ## Goals
 
-- Add Credentials provider for email/password authentication with registration
-- Add password field to User model via migration if not already there
-- Update `auth.config.ts` with a Credentials provider placeholder (`authorize: () => null`)
-- Update `auth.ts` to override the Credentials provider with real bcrypt validation logic
-- Create a registration API route at `POST /api/auth/register` (name, email, password, confirmPassword) that validates passwords match, checks for an existing user, hashes the password with bcryptjs, creates the user, and returns a success/error response
+
 
 ## Notes
-
-- Split config pattern from Phase 1 continues: `auth.config.ts` stays edge-safe with only the Credentials placeholder; `auth.ts` adds the adapter-backed bcrypt validation.
-- bcryptjs is already installed (used by the seed script).
-- Testing plan: curl the registration endpoint, sign in via `/api/auth/signin` with email/password, verify redirect to `/dashboard`, and confirm GitHub OAuth (Phase 1) still works.
-- Reference: https://authjs.dev/getting-started/authentication/credentials
 
 
 ## History
@@ -47,3 +38,5 @@ In Progress
 - 2026-08-22: Completed Codebase Cleanup Quick Wins (`ff56e5b`). Three low-risk fixes picked from that day's codebase-scanner audit, excluding auth (not implemented yet) and anything touching the Prisma schema/migrations. Removed four unused exports (`getItemType`, `itemsInCollection`, `collectionTypes`, `byNewest`) from `src/lib/dashboard.ts`, left over from the pre-Prisma `mock-data.ts` era — only `formatItemDate` remains. Extracted the duplicated `getDemoUserId()` (previously defined separately in both `src/lib/db/collections.ts` and `src/lib/db/items.ts`) into a single `src/lib/db/user.ts`, wrapped in React's `cache()` so a dashboard load no longer re-queries the same demo user row from every section. Split `Sidebar.tsx` (~115 lines) into `SidebarTypesNav.tsx` and `SidebarCollectionsNav.tsx` — a pure extraction with no behavior change; `Sidebar.tsx` now just fetches data and composes the shell plus these two. `toLabel`'s duplication between `collections.ts` and `items.ts` was left as-is since it wasn't in scope. Verified against the seeded dev database via the server-rendered dashboard HTML (200 response, sidebar sections all present). Build and lint passed.
 
 - 2026-08-23: Completed Auth Setup - NextAuth + GitHub Provider, Phase 1 (@context/features/auth-phase-1-spec.md) (`83c1bf0`). Installed `next-auth@beta` (5.0.0-beta.32) and `@auth/prisma-adapter`. Split config pattern per NextAuth v5's edge-compatibility guidance (verified against current docs via Context7): `src/auth.config.ts` holds only the GitHub provider (edge-safe, no adapter), `src/auth.ts` adds `PrismaAdapter` (reusing the existing `src/lib/prisma.ts` singleton) and forces `session: { strategy: 'jwt' }`, with `jwt`/`session` callbacks threading `user.id` onto the session — typed via a `Session` module augmentation in `src/types/next-auth.d.ts`. `src/proxy.ts` matches only `/dashboard/:path*` and redirects unauthenticated requests to `/api/auth/signin` with the original URL as `callbackUrl`; NextAuth's default sign-in page is used (no custom `pages.signIn`). `src/app/api/auth/[...nextauth]/route.ts` exports the handlers. Documented `AUTH_SECRET`/`AUTH_GITHUB_ID`/`AUTH_GITHUB_SECRET` in `.env.example` (all three were already set in `.env`). Verified via Playwright against the dev server: `/dashboard` redirects to sign-in with the correct `callbackUrl`, and clicking "Sign in with GitHub" reaches GitHub's OAuth authorize screen with the correct `client_id`/`redirect_uri`. One thing worth knowing: the full round-trip (completing a real GitHub login and landing back on `/dashboard`) was not verified end-to-end since no test GitHub credentials were available in this environment — worth a manual check. Build and lint passed.
+
+- 2026-08-23: Completed Auth Credentials - Email/Password Provider, Phase 2 (@context/features/auth-phase-2-spec.md) (`9d649e3`). Added a bcrypt-backed Credentials provider alongside Phase 1's GitHub OAuth: `src/auth.config.ts` gets a Credentials placeholder (`authorize: () => null`, edge-safe), `src/auth.ts` overrides it with real validation (`prisma.user.findUnique` by email, `bcrypt.compare` against the stored hash, cost-12 hash to match `seed.ts`), returning a sanitized user object so the password hash never reaches the session. The `User.password` field already existed in the schema from the original draft, so no migration was needed. Added `POST /api/auth/register` (`src/app/api/auth/register/route.ts`): Zod-validated (name/email/password min 8/confirmPassword via `.refine`), 409 on duplicate email, bcrypt hash, `{ success, data|error }` response shape. `zod` was added as a new dependency — not previously used in the codebase, but required by `coding-standards.md`'s "validate all inputs with Zod" rule. One thing worth knowing: `auth.ts` merges providers by filtering `authConfig.providers` for `typeof provider === "function" || provider.id !== "credentials"` before appending the real Credentials config — needed because `GitHub` is passed uninstantiated (a function) while `Credentials(...)` is a config object, so a plain `.id` check doesn't type-check against the union. Verified via curl (success, duplicate email, mismatched/short password, invalid email all return correct status/error) and Playwright (credentials sign-in reaches an authenticated `/dashboard`; GitHub OAuth still redirects to its authorize screen correctly). Build and lint passed.
