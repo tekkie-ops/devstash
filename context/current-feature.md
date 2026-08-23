@@ -1,14 +1,23 @@
-# Current Feature
+# Current Feature: Auth Credentials - Email/Password Provider
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add Credentials provider for email/password authentication with registration
+- Add password field to User model via migration if not already there
+- Update `auth.config.ts` with a Credentials provider placeholder (`authorize: () => null`)
+- Update `auth.ts` to override the Credentials provider with real bcrypt validation logic
+- Create a registration API route at `POST /api/auth/register` (name, email, password, confirmPassword) that validates passwords match, checks for an existing user, hashes the password with bcryptjs, creates the user, and returns a success/error response
 
 ## Notes
+
+- Split config pattern from Phase 1 continues: `auth.config.ts` stays edge-safe with only the Credentials placeholder; `auth.ts` adds the adapter-backed bcrypt validation.
+- bcryptjs is already installed (used by the seed script).
+- Testing plan: curl the registration endpoint, sign in via `/api/auth/signin` with email/password, verify redirect to `/dashboard`, and confirm GitHub OAuth (Phase 1) still works.
+- Reference: https://authjs.dev/getting-started/authentication/credentials
 
 
 ## History
