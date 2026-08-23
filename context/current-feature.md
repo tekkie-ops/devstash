@@ -1,44 +1,15 @@
-# Current Feature: Auth Setup - NextAuth + GitHub Provider
+# Current Feature
 
 ## Status
 
-In Progress
+
 
 ## Goals
 
-- Install NextAuth v5 (`next-auth@beta`, not `@latest`) and `@auth/prisma-adapter`
-- Set up split auth config pattern for edge compatibility
-- Add GitHub OAuth provider
-- Protect `/dashboard/*` routes using Next.js 16 proxy
-- Redirect unauthenticated users to sign-in
+
 
 ## Notes
 
-Source spec: @context/features/auth-phase-1-spec.md
-
-Files to create:
-1. `src/auth.config.ts` - Edge-compatible config (providers only, no adapter)
-2. `src/auth.ts` - Full config with Prisma adapter and JWT strategy
-3. `src/app/api/auth/[...nextauth]/route.ts` - Export handlers from auth.ts
-4. `src/proxy.ts` - Route protection with redirect logic (same level as `app/`)
-5. `src/types/next-auth.d.ts` - Extend Session type with user.id
-
-Key gotchas:
-- Use Context7 to verify newest NextAuth v5 config/conventions before implementing
-- Proxy file uses named export: `export const proxy = auth(...)`, not default export
-- Use `session: { strategy: 'jwt' }` with split config pattern
-- Don't set custom `pages.signIn` - use NextAuth's default page
-
-Environment variables needed: `AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`
-
-Testing plan:
-1. Go to `/dashboard` - should redirect to sign-in
-2. Click "Sign in with GitHub"
-3. Verify redirect back to `/dashboard` after auth
-
-References:
-- Edge compatibility: https://authjs.dev/getting-started/installation#edge-compatibility
-- Prisma adapter: https://authjs.dev/getting-started/adapters/prisma
 
 ## History
 
@@ -65,3 +36,5 @@ References:
 - 2026-08-22: Completed Add Pro Badge to Sidebar (@context/features/add-pro-badge-sidebar.md) (`65222bb`). Added a subtle "PRO" badge (ShadCN `Badge`, `outline` variant) next to the File and Image rows in the sidebar's Types group, in `src/components/dashboard/Sidebar.tsx`. A `PRO_TYPE_NAMES` set (`"file"`, `"image"`) is checked against each type's lowercase `name` (not the pluralized `label` used for display/routing), and the badge renders inline next to the label inside the type's `Link` rather than in the `SidebarMenuBadge` slot — that slot already holds the per-type item count and is absolutely positioned to the row's right edge, so a second badge there would have overlapped it. Sized down (`h-4`/`text-[10px]`/`text-muted-foreground`) to stay visually subtle and distinct from the primary-colored count badge. Verified against the already-running dev server's rendered HTML: the badge appears only on Files/Images, not the other five types. Build and lint passed.
 
 - 2026-08-22: Completed Codebase Cleanup Quick Wins (`ff56e5b`). Three low-risk fixes picked from that day's codebase-scanner audit, excluding auth (not implemented yet) and anything touching the Prisma schema/migrations. Removed four unused exports (`getItemType`, `itemsInCollection`, `collectionTypes`, `byNewest`) from `src/lib/dashboard.ts`, left over from the pre-Prisma `mock-data.ts` era — only `formatItemDate` remains. Extracted the duplicated `getDemoUserId()` (previously defined separately in both `src/lib/db/collections.ts` and `src/lib/db/items.ts`) into a single `src/lib/db/user.ts`, wrapped in React's `cache()` so a dashboard load no longer re-queries the same demo user row from every section. Split `Sidebar.tsx` (~115 lines) into `SidebarTypesNav.tsx` and `SidebarCollectionsNav.tsx` — a pure extraction with no behavior change; `Sidebar.tsx` now just fetches data and composes the shell plus these two. `toLabel`'s duplication between `collections.ts` and `items.ts` was left as-is since it wasn't in scope. Verified against the seeded dev database via the server-rendered dashboard HTML (200 response, sidebar sections all present). Build and lint passed.
+
+- 2026-08-23: Completed Auth Setup - NextAuth + GitHub Provider, Phase 1 (@context/features/auth-phase-1-spec.md) (`83c1bf0`). Installed `next-auth@beta` (5.0.0-beta.32) and `@auth/prisma-adapter`. Split config pattern per NextAuth v5's edge-compatibility guidance (verified against current docs via Context7): `src/auth.config.ts` holds only the GitHub provider (edge-safe, no adapter), `src/auth.ts` adds `PrismaAdapter` (reusing the existing `src/lib/prisma.ts` singleton) and forces `session: { strategy: 'jwt' }`, with `jwt`/`session` callbacks threading `user.id` onto the session — typed via a `Session` module augmentation in `src/types/next-auth.d.ts`. `src/proxy.ts` matches only `/dashboard/:path*` and redirects unauthenticated requests to `/api/auth/signin` with the original URL as `callbackUrl`; NextAuth's default sign-in page is used (no custom `pages.signIn`). `src/app/api/auth/[...nextauth]/route.ts` exports the handlers. Documented `AUTH_SECRET`/`AUTH_GITHUB_ID`/`AUTH_GITHUB_SECRET` in `.env.example` (all three were already set in `.env`). Verified via Playwright against the dev server: `/dashboard` redirects to sign-in with the correct `callbackUrl`, and clicking "Sign in with GitHub" reaches GitHub's OAuth authorize screen with the correct `client_id`/`redirect_uri`. One thing worth knowing: the full round-trip (completing a real GitHub login and landing back on `/dashboard`) was not verified end-to-end since no test GitHub credentials were available in this environment — worth a manual check. Build and lint passed.
