@@ -1,6 +1,6 @@
 "use server";
 
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn, signOut } from "@/auth";
 
 export type SignInState = {
@@ -31,6 +31,12 @@ export async function signInWithCredentials(
       redirectTo: resolveCallbackUrl(formData),
     });
   } catch (error) {
+    if (error instanceof CredentialsSignin && error.code === "email_not_verified") {
+      return {
+        success: false,
+        error: "Please verify your email before signing in. Check your inbox for the link we sent.",
+      };
+    }
     if (error instanceof AuthError) {
       return { success: false, error: "Invalid email or password" };
     }

@@ -1,14 +1,25 @@
-# Current Feature
+# Current Feature: Email Verification on Register
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- New users who register via the Credentials provider must verify their email by clicking a link sent to them, using Resend.
+- On successful registration, send a verification email instead of (or in addition to) immediately allowing full access.
+- Clicking the link marks the account verified (`User.emailVerified`, already in the Prisma schema from NextAuth) and lets the user sign in / proceeds them to the app.
+- Unverified users are blocked or prompted to verify before reaching `/dashboard` (exact gating behavior TBD during implementation).
 
 ## Notes
+
+- Uses Resend for sending email. `RESEND_API_KEY` is already set in `.env`.
+- Local/dev sending constraints (confirmed against current Resend docs):
+  - `from` address: `onboarding@resend.dev` (Resend's testing sender, no domain verification required).
+  - `to` address: while using `onboarding@resend.dev`, Resend only allows sending to the email address that owns the Resend account — sending to any other address 403s. So test registrations locally using that same email.
+  - The user does not own/have access to the `devstash.io` domain, so a verified custom domain isn't available yet — that's fine for dev/testing but would need to be set up before this could send to arbitrary real users in production.
+- GitHub OAuth users don't need this flow (GitHub already verifies email ownership) — should only apply to the Credentials/register path from Auth Phase 2/3.
+- Verification token mechanics (expiry, single-use, resend-link) to be decided during implementation; NextAuth's `VerificationToken` model already exists in the schema and may be reusable.
 
 
 ## History
