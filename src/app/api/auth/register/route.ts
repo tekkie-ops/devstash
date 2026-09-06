@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
 import { createVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/email/send-verification-email";
+import { isEmailVerificationEnabled } from "@/lib/email-verification";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -27,19 +28,27 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+  const verificationEnabled = isEmailVerificationEnabled();
 
   const user = await prisma.user.create({
-    data: { name, email, password: passwordHash },
+    data: {
+      name,
+      email,
+      password: passwordHash,
+      emailVerified: verificationEnabled ? null : new Date(),
+    },
   });
 
-  const token = await createVerificationToken(user.email);
-  const verifyUrl = new URL("/api/auth/verify-email", request.url);
-  verifyUrl.searchParams.set("token", token);
+  if (verificationEnabled) {
+    const token = await createVerificationToken(user.email);
+    const verifyUrl = new URL("/api/auth/verify-email", request.url);
+    verifyUrl.searchParams.set("token", token);
 
-  try {
-    await sendVerificationEmail(user.email, verifyUrl.toString());
-  } catch (error) {
-    console.error("Failed to send verification email", error);
+    try {
+      await sendVerificationEmail(user.email, verifyUrl.toString());
+    } catch (error) {
+      console.error("Failed to send verification email", error);
+    }
   }
 
   return NextResponse.json(

@@ -1,15 +1,25 @@
-# Current Feature
+# Current Feature: Toggle Email Verification Requirement
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add a way to disable the "must verify email before sign-in" requirement added by the Email Verification feature (`66e4cdc`), since Resend has no domain linked yet and its sandbox sender can only deliver to the Resend account's own email — arbitrary local registrations never actually receive the link.
+- Default to verification **enabled** (current behavior unchanged) so nothing changes unless the flag is explicitly flipped.
+- When disabled:
+  - `POST /api/auth/register` (`src/app/api/auth/register/route.ts`) should not require clicking an emailed link before sign-in — skip minting a `VerificationToken` and skip calling `sendVerificationEmail`.
+  - Credentials `authorize` in `src/auth.ts` should not throw `EmailNotVerifiedError` for accounts with a null `emailVerified`.
+- When enabled, behavior is unchanged from the existing feature.
+- GitHub OAuth is untouched either way (it was never gated by this check).
 
 ## Notes
 
+- Proposed mechanism: a single env var (e.g. `EMAIL_VERIFICATION_ENABLED`), read through one shared helper (e.g. `src/lib/email-verification.ts` exporting `isEmailVerificationEnabled()`) rather than checking `process.env` separately in the register route and in `auth.ts`. Default to enabled when unset, so existing `.env`/`.env.example` keeps current behavior unless someone opts out.
+- Decide during `start`: when disabled, should new users get `emailVerified: new Date()` set at creation (DB reflects them as verified, consistent with how GitHub OAuth users look) or just skip the `authorize` throw and leave `emailVerified` null? Setting it at creation seems more correct and avoids a permanently-null field on accounts that were never actually asked to verify.
+- Document the new env var in `.env.example`.
+- Out of scope: a resend-verification-email flow, changing the Resend sender/domain itself, gating GitHub OAuth.
 
 ## History
 

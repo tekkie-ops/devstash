@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import authConfig from "@/auth.config";
+import { isEmailVerificationEnabled } from "@/lib/email-verification";
 
 export class EmailNotVerifiedError extends CredentialsSignin {
   code = "email_not_verified";
@@ -53,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        if (!user.emailVerified) {
+        if (!user.emailVerified && isEmailVerificationEnabled()) {
           throw new EmailNotVerifiedError();
         }
 
