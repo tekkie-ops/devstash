@@ -5,8 +5,15 @@ import { registerSchema } from "@/lib/validations/auth";
 import { createVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/email/send-verification-email";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request.headers);
+  const rateLimit = await checkRateLimit("register", ip, 3, "1 h");
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit.reset);
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
 

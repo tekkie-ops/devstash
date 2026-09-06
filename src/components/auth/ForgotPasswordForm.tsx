@@ -32,9 +32,10 @@ export function ForgotPasswordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),
       });
+      const body = await res.json();
 
-      if (!res.ok) {
-        setError("Something went wrong. Please try again.");
+      if (!body.success) {
+        setError(body.error ?? "Something went wrong. Please try again.");
         return;
       }
 

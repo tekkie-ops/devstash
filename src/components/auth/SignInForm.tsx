@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -24,12 +24,29 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
     signInWithCredentials,
     initialState
   );
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
-    if (state.error) {
+    if (!state.error) return;
+
+    if (state.code === "email_not_verified") {
+      toast.error(state.error, {
+        action: {
+          label: "Resend email",
+          onClick: () => {
+            fetch("/api/auth/resend-verification", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            }).catch(() => {});
+            toast.success("If that account needs verification, we've sent a new link.");
+          },
+        },
+      });
+    } else {
       toast.error(state.error);
     }
-  }, [state]);
+  }, [state, email]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -38,7 +55,14 @@ export function SignInForm({ callbackUrl }: { callbackUrl: string }) {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            onChange={(event) => setEmail(event.target.value)}
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">

@@ -20,6 +20,12 @@ export const forgotPasswordSchema = z.object({
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
+export const resendVerificationSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+});
+
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Missing reset token"),

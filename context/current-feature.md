@@ -1,15 +1,32 @@
-# Current Feature
+# Current Feature: Rate Limiting for Auth
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add rate limiting to auth-related API routes to prevent brute force, credential stuffing, and abuse of email-sending endpoints
+- Use Upstash Redis with `@upstash/ratelimit` (sliding window) for serverless-compatible limiting
+- Create a reusable `src/lib/rate-limit.ts` utility, keyed by IP and/or IP+email per endpoint
+- Return 429 with a `Retry-After` header and a JSON `{ error }` message on limit exceeded
+- Surface the error to the user via toast on the frontend
+- Protect these endpoints per the spec's limits/windows/keys:
+  - `/api/auth/callback/credentials` (login) — 5 / 15 min, IP + email
+  - `/api/auth/register` — 3 / 1 hour, IP
+  - `/api/auth/forgot-password` — 3 / 1 hour, IP
+  - `/api/auth/reset-password` — 5 / 15 min, IP
+  - `/api/auth/resend-verification` — 3 / 15 min, IP + email
 
 ## Notes
 
+- Full spec: @context/features/rate-limiting-spec.md
+- New env vars: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- Extract IP from `x-forwarded-for` (Vercel) or the request
+- Rate limiter should fail open (allow the request) if Upstash is unavailable
+- Login rate limiting is tricky: `/api/auth/callback/credentials` is NextAuth's internal route, not one we own — may need a custom sign-in handler or a check inside the `authorize` callback instead of route-level middleware
+- `/api/auth/resend-verification` does not exist yet — per history, the Email Verification feature (`66e4cdc`) shipped with no resend path as a known gap, so this endpoint needs to be built as part of (or before) this feature
+- Consider rate-limiting middleware for a cleaner implementation later (spec explicitly defers this, not required now)
 
 ## History
 

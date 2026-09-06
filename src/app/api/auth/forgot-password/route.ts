@@ -3,8 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 import { createPasswordResetToken } from "@/lib/tokens";
 import { sendPasswordResetEmail } from "@/lib/email/send-password-reset-email";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request.headers);
+  const rateLimit = await checkRateLimit("forgot-password", ip, 3, "1 h");
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit.reset);
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = forgotPasswordSchema.safeParse(body);
 

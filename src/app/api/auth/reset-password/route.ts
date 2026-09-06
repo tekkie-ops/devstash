@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { resetPasswordSchema } from "@/lib/validations/auth";
 import { PASSWORD_RESET_TOKEN_PREFIX } from "@/lib/tokens";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 function invalidTokenResponse() {
   return NextResponse.json(
@@ -12,6 +13,12 @@ function invalidTokenResponse() {
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request.headers);
+  const rateLimit = await checkRateLimit("reset-password", ip, 5, "15 m");
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit.reset);
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = resetPasswordSchema.safeParse(body);
 

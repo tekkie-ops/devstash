@@ -1,11 +1,14 @@
 "use server";
 
+import { headers } from "next/headers";
 import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn, signOut } from "@/auth";
+import { checkRateLimit, getClientIp, rateLimitExceededMessage } from "@/lib/rate-limit";
 
 export type SignInState = {
   success: boolean;
   error?: string;
+  code?: string;
 };
 
 function resolveCallbackUrl(formData: FormData) {
@@ -24,6 +27,12 @@ export async function signInWithCredentials(
     return { success: false, error: "Email and password are required" };
   }
 
+  const ip = getClientIp(await headers());
+  const rateLimit = await checkRateLimit("login", `${ip}:${email}`, 5, "15 m");
+  if (!rateLimit.success) {
+    return { success: false, error: rateLimitExceededMessage(rateLimit.reset) };
+  }
+
   try {
     await signIn("credentials", {
       email,
@@ -35,6 +44,7 @@ export async function signInWithCredentials(
       return {
         success: false,
         error: "Please verify your email before signing in. Check your inbox for the link we sent.",
+        code: "email_not_verified",
       };
     }
     if (error instanceof AuthError) {
