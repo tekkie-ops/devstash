@@ -1,14 +1,25 @@
-# Current Feature
+# Current Feature: Forgot Password
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add a "Forgot password?" link on `/sign-in` leading to a new `/forgot-password` page.
+- `/forgot-password`: email input, requests a password reset link. Always show a generic success message regardless of whether the email exists (don't leak account existence).
+- Reuse the existing `VerificationToken` model for reset tokens (no migration) — same pattern as `src/lib/tokens.ts`'s `createVerificationToken`, single-use, time-limited (24h, matching the existing verification token TTL, unless a shorter reset-specific TTL is preferred).
+- Send the reset email via the existing Resend setup (`src/lib/resend.ts`), following `send-verification-email.ts`'s pattern — new `sendPasswordResetEmail` in `src/lib/email/`.
+- New `/reset-password?token=...` page: new password + confirm fields, validated with Zod (reuse/extend `src/lib/validations/auth.ts`), submits to a new endpoint that validates the token, hashes the new password (bcrypt, cost 12 to match `seed.ts`/`auth.ts`), updates `User.password`, and deletes the token.
+- On success, redirect to `/sign-in` with a confirmation banner (mirroring the `verified=1` pattern already on `/sign-in`); on invalid/expired token, show an error state.
+- GitHub OAuth users have no password — decide how to handle a reset request for an account with `password: null` (likely: still show the generic success message, but either skip sending an email or send an email saying to sign in with GitHub instead, so this doesn't leak which auth method the account uses).
 
 ## Notes
+
+- Relevant existing code to follow as a template: `src/lib/tokens.ts` (`createVerificationToken`), `src/lib/email/send-verification-email.ts`, `POST /api/auth/register`, `GET /api/auth/verify-email`, `src/app/sign-in/page.tsx` + `SignInForm`/`AuthCard` components, `src/lib/validations/auth.ts`.
+- **Token collision risk:** `VerificationToken` is keyed by `identifier` (the email) and `createVerificationToken` deletes *all* existing tokens for that identifier before creating a new one. If reset tokens reuse the same identifier scheme (plain email), requesting a password reset would silently invalidate a pending email-verification token for the same address, and vice versa. Decide during implementation whether to accept this (likely fine — narrow edge case) or scope reset tokens with a distinct identifier (e.g. `reset:${email}`) to avoid cross-invalidation.
+- `EMAIL_VERIFICATION_ENABLED` toggle and Resend's sandbox-sender limitation (can only deliver to the Resend account's own email) both still apply — reset emails to arbitrary local test accounts won't actually arrive, same caveat as registration.
+- Password reset must work independent of `EMAIL_VERIFICATION_ENABLED` — even if that flag is off, forgot-password should still function normally.
 
 
 ## History

@@ -7,6 +7,7 @@ interface SignInPageProps {
     registered?: string;
     verified?: string;
     verifyError?: string;
+    reset?: string;
   }>;
 }
 
@@ -27,6 +28,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       {params.verifyError === "1" ? (
         <p className="mb-4 text-sm text-destructive">
           That verification link is invalid or has expired.
+        </p>
+      ) : null}
+      {params.reset === "1" ? (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Password reset. Sign in with your new password.
         </p>
       ) : null}
       <SignInForm callbackUrl={callbackUrl} />
