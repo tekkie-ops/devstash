@@ -1,15 +1,24 @@
-# Current Feature
+# Current Feature: Items List View
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add a dynamic route `/items/[type]` that lists items filtered by that type (e.g. `/items/snippets`, `/items/notes`)
+- Fetch items by type for the current (demo) user, following the existing `src/lib/db/*` query pattern
+- Render a responsive grid of `ItemCard` components — single column on small screens, two columns at `md` and up
+- Each card shows a left border colored by its item type
+- Match existing codebase conventions (async server components, Prisma-direct queries, `ItemSummary`-style shapes, type label ↔ route slug mapping)
 
 ## Notes
 
+- Spec: @context/features/item-list-view-spec.md
+- The sidebar Types nav already links to `/items/[label]` (pluralized slug), but the route does not exist yet — this feature creates it.
+- Existing dashboard item rendering (`ItemRow.tsx`, `src/lib/db/items.ts`, `ItemSummary`) is the reference; spec calls for a new card component (`ItemCard`) in a grid rather than reusing the row.
+- Type ↔ slug conversion already exists as `toLabel` duplicated in `collections.ts` / `items.ts` — reuse/consolidate rather than add a third copy.
+- Scope is display-only; no create/edit drawer (separate future feature).
 
 ## History
 
