@@ -1,10 +1,7 @@
-# Review Action
+# Start Action
 
-1. Read current-feature.md to understand the goals
-2. Review all code changes made for this feature
-3. Check for:
-   - ✅ Goals met
-   - ❌ Goals missing or incomplete
-   - ⚠️ Code quality issues or bugs
-   - 🚫 Scope creep (code beyond goals)
-4. Final verdict: Ready to complete or needs changes
+1. Read current-feature.md - verify Goals are populated
+2. If empty, error: "Run /feature load first"
+3. Set Status to "In Progress"
+4. Create and checkout the feature branch (derive name from H1 heading)
+5. List the goals, then implement them one by one

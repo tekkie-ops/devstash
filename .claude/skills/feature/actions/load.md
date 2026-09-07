@@ -1,23 +1,14 @@
-# Explain Action
+# Load Action
 
-1. Read current-feature.md to understand what was implemented
-2. Run `git diff main --name-only` to get list of files changed
-3. For each file created or modified:
-   - Show the file path
-   - Give a 1-2 sentence explanation of what it does / what changed
-   - Highlight any key functions, components, or patterns used
-4. End with a brief summary of how the pieces fit together
+1. Check $ARGUMENTS (after "load"):
+   - If it looks like a filename (single word, no spaces): Look for `context/features/{name}.md` OR `context/fixes/{name}.md`
+   - If it's multiple words: Use as inline feature description, generate goals
+   - If empty: Error - "load" requires a spec filename or feature description
 
-## Output Format
+2. Update current-feature.md:
+   - Update H1 heading to include feature name (e.g., `# Current Feature: Add Navbar`)
+   - Write goals as bullet points under ## Goals
+   - Write any additional notes/context under ## Notes
+   - Set Status to "Not Started"
 
-## Files Changed
-
-**path/to/file.ts** (new)
-Brief explanation of what this file does and why it was added.
-
-**path/to/other.ts** (modified)
-What changed and why.
-
-## How It All Connects
-
-Brief summary of the data/control flow between these files.
+3. Confirm spec loaded and show the feature summary
