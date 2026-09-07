@@ -15,7 +15,7 @@ This is the common workflow that we will use for every single feature/fix:
 1. **Document** - Document the feature in @context/current-feature.md.
 2. **Branch** - Create new branch for feature, fix, etc
 3. **Implement** - Implement the feature/fix that I create in @context/current-feature.md
-4. **Test** - Verify it works in the browser. Implement unit testing later. Run `npm run build` and fix any errors
+4. **Test** - Verify it works in the browser. Add or update Vitest unit tests for any new or changed server actions / utilities (see Testing below). Run `npm test` and `npm run build` and fix any errors
 5. **Iterate** - Iterate and change things if needed
 6. **Commit** - Only after build passes and everything works
 7. **Merge** - Merge to main
@@ -24,6 +24,21 @@ This is the common workflow that we will use for every single feature/fix:
 10. Mark as completed in @context/current-feature.md and add to history
 
 Do NOT commit without permission and until the build passes. If build fails, fix the issues first.
+
+## Testing
+
+- **Vitest**, `node` environment. Config: `vitest.config.ts`. Run with `npm test` (once) or `npm run test:watch`.
+- **Scope: server actions and utilities only** — `src/actions/**` and `src/lib/**`. `vitest.config.ts`
+  restricts test discovery to those paths, so tests only live there.
+- **Do not unit-test components or React Server Components** (pages, layouts, anything in
+  `src/components/**` or `src/app/**`). Those are verified in the browser.
+- Colocate tests as `*.test.ts` next to the file under test (e.g. `src/lib/rate-limit.test.ts`).
+- Import test helpers explicitly from `vitest` (`import { describe, it, expect, vi } from "vitest"`) —
+  globals are not enabled.
+- Mock at the module boundary with `vi.mock` for anything that reaches the network, database, or
+  request context: `@/lib/prisma`, `@/auth`, `next/headers`, `resend`. Prefer testing pure logic
+  (Zod schemas, formatters, parsers, fail-open branches) that needs no mocks.
+- New or changed server actions / utilities should ship with tests in the same commit.
 
 ## Branching
 
