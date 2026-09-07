@@ -100,6 +100,54 @@ export async function getRecentItems(limit: number): Promise<ItemSummary[]> {
   return items.map(toItemSummary);
 }
 
+/**
+ * Resolves a URL slug (the lowercased plural label, e.g. "snippets") to its
+ * system item type and that type's items for the demo user, newest first.
+ * Returns null when the slug matches no system type.
+ */
+export async function getItemsByTypeSlug(slug: string): Promise<{
+  type: CollectionItemType;
+  items: ItemSummary[];
+} | null> {
+  const userId = await getDemoUserId();
+
+  if (!userId) {
+    return null;
+  }
+
+  const normalized = slug.toLowerCase();
+  const systemTypes = await prisma.itemType.findMany({
+    where: { isSystem: true },
+  });
+  const matched = systemTypes.find(
+    (type) => toLabel(type.name).toLowerCase() === normalized,
+  );
+
+  if (!matched) {
+    return null;
+  }
+
+  const items = await prisma.item.findMany({
+    where: { userId, itemTypeId: matched.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      itemType: true,
+      tags: { include: { tag: true } },
+    },
+  });
+
+  return {
+    type: {
+      id: matched.id,
+      name: matched.name,
+      label: toLabel(matched.name),
+      icon: matched.icon,
+      color: matched.color,
+    },
+    items: items.map(toItemSummary),
+  };
+}
+
 export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
   const userId = await getDemoUserId();
 
