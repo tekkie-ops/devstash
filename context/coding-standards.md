@@ -89,6 +89,17 @@ Example v4 configuration:
 - Return `{ success, data, error }` pattern from actions
 - Display user-friendly error messages via toast
 
+## Testing
+
+- **Vitest** (`node` environment), run with `npm test`. Config in `vitest.config.ts`.
+- Test **server actions and utilities only** — `src/actions/**` and `src/lib/**`. Do not test
+  components or React Server Components; those are checked in the browser.
+- Colocate tests as `*.test.ts` beside the file under test.
+- Import from `vitest` explicitly (no globals).
+- Mock external boundaries with `vi.mock` — `@/lib/prisma`, `@/auth`, `next/headers`, `resend`.
+  Favor pure logic that needs no mocks (Zod schemas, formatters, fail-open branches).
+- Add tests alongside new/changed server actions and utilities in the same commit.
+
 ## Code Quality
 
 - No commented-out code unless specified

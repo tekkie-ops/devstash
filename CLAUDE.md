@@ -18,15 +18,20 @@ Read the following to get the full context of the project:
 ## Commands
 
 ```bash
-npm run dev      # start dev server (http://localhost:3000)
-npm run build    # production build
-npm run start    # serve production build
-npm run lint     # eslint (flat config: eslint.config.mjs)
-npm run db:test  # Prisma/Neon connection smoke test
-npm run db:seed  # seed the database (prisma db seed)
+npm run dev        # start dev server (http://localhost:3000)
+npm run build      # production build
+npm run start      # serve production build
+npm run lint       # eslint (flat config: eslint.config.mjs)
+npm test           # run unit tests once (vitest)
+npm run test:watch # run unit tests in watch mode
+npm run db:test    # Prisma/Neon connection smoke test
+npm run db:seed    # seed the database (prisma db seed)
 ```
 
-No test runner is configured yet.
+Unit tests use **Vitest** (`node` environment) and cover **server actions and utilities only** —
+`src/actions/**` and `src/lib/**`. Components and React Server Components are not unit-tested;
+they are verified in the browser. Config: `vitest.config.ts`. Tests are colocated as
+`*.test.ts` next to the file under test.
 
 ## Neon MCP
 
