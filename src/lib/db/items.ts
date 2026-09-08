@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CollectionItemType } from "@/lib/db/collections";
 import { getDemoUserId } from "@/lib/db/user";
+import type { UpdateItemInput } from "@/lib/validations/items";
 
 export interface ItemSummary {
   id: string;
@@ -199,6 +200,57 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
     createdAt: item.createdAt,
     collections: item.collections.map(({ collection }) => collection),
   };
+}
+
+/**
+ * Applies an edit from the drawer. Scoped to the demo user like every other
+ * query here; returns null when the id matches nothing the demo user owns.
+ * Tags are replaced wholesale — existing join rows are dropped and the new set
+ * is connect-or-created. Returns the refreshed `ItemDetail` so the drawer can
+ * update without a second fetch.
+ */
+export async function updateItem(
+  id: string,
+  data: UpdateItemInput,
+): Promise<ItemDetail | null> {
+  const userId = await getDemoUserId();
+
+  if (!userId) {
+    return null;
+  }
+
+  const existing = await prisma.item.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  await prisma.item.update({
+    where: { id },
+    data: {
+      title: data.title,
+      description: data.description,
+      content: data.content,
+      url: data.url,
+      language: data.language,
+      tags: {
+        deleteMany: {},
+        create: data.tags.map((name) => ({
+          tag: {
+            connectOrCreate: {
+              where: { name },
+              create: { name },
+            },
+          },
+        })),
+      },
+    },
+  });
+
+  return getItemDetail(id);
 }
 
 export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
