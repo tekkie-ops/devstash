@@ -253,6 +253,33 @@ export async function updateItem(
   return getItemDetail(id);
 }
 
+/**
+ * Permanently deletes an item, scoped to the demo user like every other query
+ * here. `ItemTag` / `ItemCollection` join rows cascade on delete (see schema),
+ * so no manual cleanup. Returns false when the id matches nothing the demo user
+ * owns, true once the row is gone.
+ */
+export async function deleteItem(id: string): Promise<boolean> {
+  const userId = await getDemoUserId();
+
+  if (!userId) {
+    return false;
+  }
+
+  const existing = await prisma.item.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return false;
+  }
+
+  await prisma.item.delete({ where: { id } });
+
+  return true;
+}
+
 export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
   const userId = await getDemoUserId();
 

@@ -1,14 +1,25 @@
-# Current Feature
+# Current Feature: Delete Item
 
 ## Status
 
-
+Complete
 
 ## Goals
 
-
+- The Delete button in the item drawer's view action bar (currently inert — see `ItemDrawer.tsx` `ViewActionBar`) triggers a shadcn `AlertDialog` confirmation before anything is deleted.
+- Confirming permanently deletes the item and its join rows (tags, collections) from the database.
+- On success: a sonner toast ("Item deleted"), the drawer closes, and the dashboard / items-list views refresh so the removed item disappears.
+- On failure: an error toast, drawer stays open, nothing deleted.
+- Cancelling the confirmation is a no-op.
 
 ## Notes
+
+- Follows the Item Drawer — Edit Mode pattern (`75d5055`): new `deleteItem(itemId)` server action in `src/actions/items.ts` alongside `updateItem`, backed by a new `deleteItem(id)` in `src/lib/db/items.ts` with the same demo-user `findFirst` ownership guard (→ "Item not found" when not owned). Discriminated `{ success: true } | { success: false; error }` result.
+- `prisma.item.delete` — `ItemTag` / `ItemCollection` join rows cascade on `onDelete: Cascade` (schema already has this), so no manual cleanup.
+- shadcn `alert-dialog` is already installed (added in the Profile feature) — no new component.
+- Client wiring lives in `ItemDrawer.tsx`: `ViewActionBar`'s Delete button opens the `AlertDialog`; on confirm, call the action, then on success call a new `onDeleted` prop threaded from `ItemDrawerProvider` (closes the sheet, clears `detail`) and `router.refresh()`.
+- Unit tests in the same commit: `src/actions/items.test.ts` gains `deleteItem` cases (`vi.mock` on `@/auth` + `@/lib/db/items`), mirroring the existing `updateItem` tests. No component tests (browser-verified).
+- Auth check is signed-in-only, matching `updateItem` — the dashboard is still demo-user-scoped.
 
 
 ## History
