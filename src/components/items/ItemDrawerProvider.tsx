@@ -81,6 +81,7 @@ export function ItemDrawerProvider({ children }: { children: ReactNode }) {
         detail={detail}
         loading={loading}
         error={error}
+        onSaved={setDetail}
       />
     </ItemDrawerContext.Provider>
   );
