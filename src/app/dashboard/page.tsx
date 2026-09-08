@@ -2,6 +2,7 @@ import { PinnedItems } from "@/components/dashboard/PinnedItems";
 import { RecentCollections } from "@/components/dashboard/RecentCollections";
 import { RecentItems } from "@/components/dashboard/RecentItems";
 import { StatsCards } from "@/components/dashboard/StatsCards";
+import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
 
 export default function DashboardPage() {
   return (
@@ -13,8 +14,10 @@ export default function DashboardPage() {
 
       <StatsCards />
       <RecentCollections />
-      <PinnedItems />
-      <RecentItems />
+      <ItemDrawerProvider>
+        <PinnedItems />
+        <RecentItems />
+      </ItemDrawerProvider>
     </div>
   );
 }
