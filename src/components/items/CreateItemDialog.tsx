@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
+import { CodeEditor } from "@/components/items/CodeEditor";
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,8 @@ import { cn } from "@/lib/utils";
 const CONTENT_TYPES = ["snippet", "prompt", "command", "note"];
 /** Type names whose items carry a language tag. */
 const LANGUAGE_TYPES = ["snippet", "command"];
+/** Type names whose body is code — shown in a Monaco editor, not a textarea. */
+const CODE_TYPES = ["snippet", "command"];
 
 /**
  * The "New Item" entry point in the top bar. Opens a modal with a type selector
@@ -49,6 +52,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
 
   const showContent = CONTENT_TYPES.includes(typeName);
   const showLanguage = LANGUAGE_TYPES.includes(typeName);
+  const showCode = CODE_TYPES.includes(typeName);
   const showUrl = typeName === "link";
 
   function reset() {
@@ -162,17 +166,26 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
               />
             </Field>
 
-            {showContent && (
-              <Field label="Content" htmlFor="create-item-content">
-                <Textarea
-                  id="create-item-content"
-                  value={content}
-                  onChange={(event) => setContent(event.target.value)}
-                  rows={6}
-                  className="font-mono text-xs"
-                />
-              </Field>
-            )}
+            {showContent &&
+              (showCode ? (
+                <Field label="Content">
+                  <CodeEditor
+                    value={content}
+                    language={language}
+                    onChange={setContent}
+                  />
+                </Field>
+              ) : (
+                <Field label="Content" htmlFor="create-item-content">
+                  <Textarea
+                    id="create-item-content"
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    rows={6}
+                    className="font-mono text-xs"
+                  />
+                </Field>
+              ))}
 
             {showLanguage && (
               <Field label="Language" htmlFor="create-item-language">
