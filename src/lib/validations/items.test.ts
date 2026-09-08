@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { updateItemSchema } from "@/lib/validations/items";
+import { createItemSchema, updateItemSchema } from "@/lib/validations/items";
 
 describe("updateItemSchema", () => {
   const valid = {
@@ -78,5 +78,59 @@ describe("updateItemSchema", () => {
     expect(
       updateItemSchema.safeParse({ ...valid, tags: ["ok", "  "] }).success,
     ).toBe(false);
+  });
+});
+
+describe("createItemSchema", () => {
+  const valid = {
+    type: "snippet" as const,
+    title: "My snippet",
+    description: "A short description",
+    content: "console.log('hi')",
+    url: null,
+    language: "typescript",
+    tags: ["react", "hooks"],
+  };
+
+  it("accepts a well-formed payload", () => {
+    expect(createItemSchema.parse(valid)).toEqual(valid);
+  });
+
+  it("inherits the update rules (title required, tags deduped)", () => {
+    expect(createItemSchema.safeParse({ ...valid, title: "  " }).success).toBe(
+      false,
+    );
+    expect(
+      createItemSchema.parse({ ...valid, tags: [" a ", "a"] }).tags,
+    ).toEqual(["a"]);
+  });
+
+  it("rejects an unknown or non-creatable type", () => {
+    expect(createItemSchema.safeParse({ ...valid, type: "file" }).success).toBe(
+      false,
+    );
+    expect(
+      createItemSchema.safeParse({ ...valid, type: "banana" }).success,
+    ).toBe(false);
+  });
+
+  it("requires a URL for link items", () => {
+    const result = createItemSchema.safeParse({
+      ...valid,
+      type: "link",
+      url: "",
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("URL is required for links");
+  });
+
+  it("accepts a link item that carries a URL", () => {
+    const parsed = createItemSchema.parse({
+      ...valid,
+      type: "link",
+      content: null,
+      url: "https://example.com",
+    });
+    expect(parsed.url).toBe("https://example.com");
   });
 });

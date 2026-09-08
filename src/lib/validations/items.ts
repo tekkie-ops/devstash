@@ -46,3 +46,33 @@ export const updateItemSchema = z.object({
 });
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
+
+/**
+ * System item types offered in the New Item dialog. `file` / `image` are Pro
+ * and excluded — they need an upload flow, not this text-only form.
+ */
+export const CREATE_ITEM_TYPES = [
+  "snippet",
+  "prompt",
+  "command",
+  "note",
+  "link",
+] as const;
+
+export type CreateItemType = (typeof CREATE_ITEM_TYPES)[number];
+
+/**
+ * Payload accepted by the `createItem` server action — the update fields plus a
+ * `type` discriminator. `link` items must carry a URL; the client mirrors this
+ * by disabling the submit button, but this schema is the source of truth.
+ */
+export const createItemSchema = updateItemSchema
+  .extend({
+    type: z.enum(CREATE_ITEM_TYPES),
+  })
+  .refine((data) => data.type !== "link" || data.url !== null, {
+    message: "URL is required for links",
+    path: ["url"],
+  });
+
+export type CreateItemInput = z.infer<typeof createItemSchema>;

@@ -1,20 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { deleteItem, updateItem } from "@/actions/items";
+import { createItem, deleteItem, updateItem } from "@/actions/items";
 
-const { authMock, updateItemRecordMock, deleteItemRecordMock } = vi.hoisted(
-  () => ({
-    authMock: vi.fn(),
-    updateItemRecordMock: vi.fn(),
-    deleteItemRecordMock: vi.fn(),
-  }),
-);
+const {
+  authMock,
+  createItemRecordMock,
+  updateItemRecordMock,
+  deleteItemRecordMock,
+} = vi.hoisted(() => ({
+  authMock: vi.fn(),
+  createItemRecordMock: vi.fn(),
+  updateItemRecordMock: vi.fn(),
+  deleteItemRecordMock: vi.fn(),
+}));
 
 vi.mock("@/auth", () => ({
   auth: authMock,
 }));
 
 vi.mock("@/lib/db/items", () => ({
+  createItem: createItemRecordMock,
   updateItem: updateItemRecordMock,
   deleteItem: deleteItemRecordMock,
 }));
@@ -30,9 +35,103 @@ const validInput = {
 
 beforeEach(() => {
   authMock.mockReset();
+  createItemRecordMock.mockReset();
   updateItemRecordMock.mockReset();
   deleteItemRecordMock.mockReset();
   authMock.mockResolvedValue({ user: { id: "user-1" } });
+});
+
+describe("createItem action", () => {
+  const validCreateInput = {
+    type: "snippet",
+    title: "New snippet",
+    description: "desc",
+    content: "body",
+    url: null,
+    language: "typescript",
+    tags: ["a", "b"],
+  };
+
+  it("rejects an unauthenticated caller before touching the database", async () => {
+    authMock.mockResolvedValue(null);
+
+    const result = await createItem(validCreateInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "You must be signed in to do that",
+    });
+    expect(createItemRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Zod message when validation fails", async () => {
+    const result = await createItem({ ...validCreateInput, title: "  " });
+
+    expect(result).toEqual({ success: false, error: "Title is required" });
+    expect(createItemRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown type", async () => {
+    const result = await createItem({ ...validCreateInput, type: "file" });
+
+    expect(result.success).toBe(false);
+    expect(createItemRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a URL for link items", async () => {
+    const result = await createItem({
+      ...validCreateInput,
+      type: "link",
+      url: "",
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "URL is required for links",
+    });
+    expect(createItemRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("passes normalized data to the query and returns the created detail", async () => {
+    const detail = { id: "item-9", title: "New snippet" };
+    createItemRecordMock.mockResolvedValue(detail);
+
+    const result = await createItem({
+      ...validCreateInput,
+      tags: [" a ", "a", "b"],
+    });
+
+    expect(createItemRecordMock).toHaveBeenCalledWith({
+      type: "snippet",
+      title: "New snippet",
+      description: "desc",
+      content: "body",
+      url: null,
+      language: "typescript",
+      tags: ["a", "b"],
+    });
+    expect(result).toEqual({ success: true, data: detail });
+  });
+
+  it("surfaces a null from the query", async () => {
+    createItemRecordMock.mockResolvedValue(null);
+
+    const result = await createItem(validCreateInput);
+
+    expect(result).toEqual({ success: false, error: "Couldn't create item" });
+  });
+
+  it("fails soft when the query throws", async () => {
+    createItemRecordMock.mockRejectedValue(new Error("db down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await createItem(validCreateInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Something went wrong. Please try again.",
+    });
+  });
 });
 
 describe("updateItem action", () => {
