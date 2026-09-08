@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { CollectionItemType } from "@/lib/db/collections";
+import type { UploadKind } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 
 /** Type names whose items carry a free-text body. */
@@ -32,6 +34,8 @@ const LANGUAGE_TYPES = ["snippet", "command"];
 const CODE_TYPES = ["snippet", "command"];
 /** Type names whose body is prose — shown in a Markdown editor with Write/Preview. */
 const MARKDOWN_TYPES = ["note", "prompt"];
+/** Type names whose body is an uploaded R2 object. */
+const FILE_TYPES = ["file", "image"];
 
 /**
  * The "New Item" entry point in the top bar. Opens a modal with a type selector
@@ -52,12 +56,15 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
   const [language, setLanguage] = useState("");
   const [url, setUrl] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const showContent = CONTENT_TYPES.includes(typeName);
   const showLanguage = LANGUAGE_TYPES.includes(typeName);
   const showCode = CODE_TYPES.includes(typeName);
   const showMarkdown = MARKDOWN_TYPES.includes(typeName);
   const showUrl = typeName === "link";
+  const showFile = FILE_TYPES.includes(typeName);
 
   function reset() {
     setTypeName(fallbackType);
@@ -67,6 +74,14 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
     setLanguage("");
     setUrl("");
     setTagsInput("");
+    setUploadedFile(null);
+    setUploading(false);
+  }
+
+  function handleTypeChange(name: string) {
+    setTypeName(name);
+    setUploadedFile(null);
+    setUploading(false);
   }
 
   function handleOpenChange(next: boolean) {
@@ -78,6 +93,8 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
   const canSubmit =
     title.trim().length > 0 &&
     (!showUrl || url.trim().length > 0) &&
+    (!showFile || uploadedFile !== null) &&
+    !uploading &&
     !submitting;
 
   async function handleSubmit(event: React.FormEvent) {
@@ -90,6 +107,9 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
       content: showContent ? content : null,
       url: showUrl ? url : null,
       language: showLanguage ? language : null,
+      fileUrl: showFile ? uploadedFile?.fileUrl ?? null : null,
+      fileName: showFile ? uploadedFile?.fileName ?? null : null,
+      fileSize: showFile ? uploadedFile?.fileSize ?? null : null,
       tags: tagsInput
         .split(",")
         .map((tag) => tag.trim())
@@ -120,7 +140,8 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
         <DialogHeader className="border-b p-6 pr-14">
           <DialogTitle>New item</DialogTitle>
           <DialogDescription>
-            Add a snippet, prompt, command, note, or link to your stash.
+            Add a snippet, prompt, command, note, link, file, or image to your
+            stash.
           </DialogDescription>
         </DialogHeader>
 
@@ -134,7 +155,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
                     <button
                       key={type.id}
                       type="button"
-                      onClick={() => setTypeName(type.name)}
+                      onClick={() => handleTypeChange(type.name)}
                       aria-pressed={selected}
                       className={cn(
                         "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors",
@@ -194,6 +215,17 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
                   />
                 </Field>
               ))}
+
+            {showFile && (
+              <Field label={typeName === "image" ? "Image" : "File"}>
+                <FileUpload
+                  kind={typeName as UploadKind}
+                  value={uploadedFile}
+                  onChange={setUploadedFile}
+                  onUploadingChange={setUploading}
+                />
+              </Field>
+            )}
 
             {showLanguage && (
               <Field label="Language" htmlFor="create-item-language">

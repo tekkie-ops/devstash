@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createItemSchema, updateItemSchema } from "@/lib/validations/items";
+import {
+  createItemSchema,
+  FILE_ITEM_TYPES,
+  updateItemSchema,
+} from "@/lib/validations/items";
 
 describe("updateItemSchema", () => {
   const valid = {
@@ -92,8 +96,50 @@ describe("createItemSchema", () => {
     tags: ["react", "hooks"],
   };
 
-  it("accepts a well-formed payload", () => {
-    expect(createItemSchema.parse(valid)).toEqual(valid);
+  it("accepts a well-formed payload and defaults the file fields to null", () => {
+    expect(createItemSchema.parse(valid)).toEqual({
+      ...valid,
+      fileUrl: null,
+      fileName: null,
+      fileSize: null,
+    });
+  });
+
+  it("accepts a file item carrying uploaded object metadata", () => {
+    const parsed = createItemSchema.parse({
+      type: "file",
+      title: "Runbook",
+      content: null,
+      url: null,
+      language: null,
+      tags: [],
+      fileUrl: "https://cdn.example.com/items/file/abc.pdf",
+      fileName: "runbook.pdf",
+      fileSize: 2048,
+    });
+    expect(parsed).toMatchObject({
+      type: "file",
+      fileUrl: "https://cdn.example.com/items/file/abc.pdf",
+      fileName: "runbook.pdf",
+      fileSize: 2048,
+    });
+  });
+
+  it("rejects a file/image item with no uploaded file", () => {
+    for (const type of FILE_ITEM_TYPES) {
+      const result = createItemSchema.safeParse({
+        ...valid,
+        type,
+        content: null,
+        fileUrl: null,
+        fileName: null,
+        fileSize: null,
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0]?.message).toBe(
+        "Upload a file before saving",
+      );
+    }
   });
 
   it("inherits the update rules (title required, tags deduped)", () => {
@@ -105,10 +151,7 @@ describe("createItemSchema", () => {
     ).toEqual(["a"]);
   });
 
-  it("rejects an unknown or non-creatable type", () => {
-    expect(createItemSchema.safeParse({ ...valid, type: "file" }).success).toBe(
-      false,
-    );
+  it("rejects an unknown type", () => {
     expect(
       createItemSchema.safeParse({ ...valid, type: "banana" }).success,
     ).toBe(false);

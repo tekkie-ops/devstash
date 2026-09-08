@@ -47,10 +47,7 @@ export const updateItemSchema = z.object({
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 
-/**
- * System item types offered in the New Item dialog. `file` / `image` are Pro
- * and excluded — they need an upload flow, not this text-only form.
- */
+/** Text-body item types created through the plain New Item form. */
 export const CREATE_ITEM_TYPES = [
   "snippet",
   "prompt",
@@ -59,20 +56,60 @@ export const CREATE_ITEM_TYPES = [
   "link",
 ] as const;
 
-export type CreateItemType = (typeof CREATE_ITEM_TYPES)[number];
+/** Item types whose body is an uploaded R2 object rather than text. */
+export const FILE_ITEM_TYPES = ["file", "image"] as const;
+
+/** Every type the New Item dialog can create. */
+export const ALL_CREATE_ITEM_TYPES = [
+  ...CREATE_ITEM_TYPES,
+  ...FILE_ITEM_TYPES,
+] as const;
+
+export type CreateItemType = (typeof ALL_CREATE_ITEM_TYPES)[number];
+export type FileItemType = (typeof FILE_ITEM_TYPES)[number];
+
+/** Optional non-empty trimmed string, blank -> null. */
+const optionalNonEmpty = z
+  .string()
+  .nullish()
+  .transform((value) => {
+    const trimmed = (value ?? "").trim();
+    return trimmed.length > 0 ? trimmed : null;
+  });
 
 /**
  * Payload accepted by the `createItem` server action — the update fields plus a
- * `type` discriminator. `link` items must carry a URL; the client mirrors this
- * by disabling the submit button, but this schema is the source of truth.
+ * `type` discriminator and (for `file` / `image`) the metadata of an
+ * already-uploaded R2 object. `link` items must carry a URL and file/image items
+ * must carry a `fileUrl` + `fileName` + `fileSize`; the client mirrors both
+ * rules by disabling the submit button, but this schema is the source of truth.
  */
 export const createItemSchema = updateItemSchema
   .extend({
-    type: z.enum(CREATE_ITEM_TYPES),
+    type: z.enum(ALL_CREATE_ITEM_TYPES),
+    fileUrl: optionalNonEmpty,
+    fileName: optionalNonEmpty,
+    fileSize: z
+      .number()
+      .int()
+      .positive()
+      .nullish()
+      .transform((value) => value ?? null),
   })
   .refine((data) => data.type !== "link" || data.url !== null, {
     message: "URL is required for links",
     path: ["url"],
-  });
+  })
+  .refine(
+    (data) =>
+      !(FILE_ITEM_TYPES as readonly string[]).includes(data.type) ||
+      (data.fileUrl !== null &&
+        data.fileName !== null &&
+        data.fileSize !== null),
+    {
+      message: "Upload a file before saving",
+      path: ["fileUrl"],
+    },
+  );
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;

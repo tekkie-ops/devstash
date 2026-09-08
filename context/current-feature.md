@@ -1,15 +1,34 @@
-# Current Feature
+# Current Feature: File & Image Upload with Cloudflare R2
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add an R2 upload API route (server-side upload to Cloudflare R2)
+- Keep all Prisma/DB access in `src/lib/db/items.ts`
+- Build a `FileUpload` component with drag-and-drop and an upload progress indicator
+- Wire `FileUpload` into the create item modal for `file` / `image` types
+- Delete the backing R2 object when an item is deleted
+- Add a download proxy API route (server streams the file back, avoiding R2 CORS)
+- Add a Download button in `ItemDrawer` for `file` items
+- Render an image preview for `image` items; show file info (name, size) for `file` items
+- Enforce file constraints:
+  - Images: max 5 MB — `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`
+  - Files: max 10 MB — `.pdf`, `.txt`, `.md`, `.json`, `.yaml`, `.yml`, `.xml`, `.csv`, `.toml`, `.ini`
 
 ## Notes
 
+- Spec: @context/features/file-image-spec.md
+- `file` / `image` are the two Pro-tier system types (`contentType: file`), stored in R2 and referenced via `Item.fileUrl` / `fileName` / `fileSize` — the schema fields already exist.
+- Allowed MIME types (validate alongside extension + size):
+  - Images: `image/png`, `image/jpeg`, `image/gif`, `image/webp`, `image/svg+xml`
+  - Files: `application/pdf`, `text/plain`, `text/markdown`, `application/json`, `application/x-yaml`, `text/yaml`, `application/xml`, `text/xml`, `text/csv`, `application/toml` (`.ini` → `text/plain`)
+- Item creation currently goes through a shadcn `Dialog` (`CreateItemDialog.tsx`) + the `createItem` server action / `createItemSchema`; `CREATE_ITEM_TYPES` currently excludes `file`/`image` precisely because there was no upload flow — this feature adds it.
+- Delete already flows through `deleteItem` in `src/actions/items.ts` → `src/lib/db/items.ts`; R2 cleanup hooks in there.
+- Coding standards: API routes are the right call for uploads (progress tracking) and the download proxy (custom headers); validate inputs with Zod; `{ success, data, error }` shape.
+- New env/config needed for R2 (account ID, access key/secret, bucket, endpoint) — add to `.env.example`.
 
 ## History
 

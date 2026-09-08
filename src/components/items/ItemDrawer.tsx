@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Pencil, Pin, Star, Trash2 } from "lucide-react";
+import { Copy, Download, Pencil, Pin, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteItem, updateItem } from "@/actions/items";
@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { formatLongDate } from "@/lib/dashboard";
 import type { ItemDetail } from "@/lib/db/items";
+import { formatFileSize } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 
 /** Type names whose items carry an editable free-text body. */
@@ -534,19 +535,7 @@ function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
 
 function ContentSection({ detail }: { detail: ItemDetail }) {
   if (detail.contentType === "file") {
-    return (
-      <Section title="File">
-        <p className="text-sm text-foreground">
-          {detail.fileName ?? "Unnamed file"}
-          {detail.fileSize != null && (
-            <span className="text-muted-foreground">
-              {" "}
-              · {detail.fileSize.toLocaleString()} bytes
-            </span>
-          )}
-        </p>
-      </Section>
-    );
+    return <FileSection detail={detail} />;
   }
 
   if (detail.url && !detail.content) {
@@ -585,6 +574,50 @@ function ContentSection({ detail }: { detail: ItemDetail }) {
   }
 
   return null;
+}
+
+/**
+ * File / image items: an inline preview for images, a filename + size card
+ * otherwise, and a Download button that goes through the same-origin proxy
+ * route (`/api/items/[id]/download`) so it works without R2 CORS config.
+ */
+function FileSection({ detail }: { detail: ItemDetail }) {
+  const isImage = detail.type.name === "image";
+  const downloadHref = `/api/items/${detail.id}/download`;
+
+  return (
+    <Section title={isImage ? "Image" : "File"}>
+      {isImage && detail.fileUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={detail.fileUrl}
+          alt={detail.fileName ?? "Image preview"}
+          className="max-h-72 w-full rounded-lg border object-contain"
+        />
+      )}
+
+      <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium">
+            {detail.fileName ?? "Unnamed file"}
+          </span>
+          {detail.fileSize != null && (
+            <span className="text-xs text-muted-foreground">
+              {formatFileSize(detail.fileSize)}
+            </span>
+          )}
+        </div>
+        {detail.fileUrl && (
+          <Button asChild variant="outline" size="sm">
+            <a href={downloadHref} download>
+              <Download className="size-4" />
+              Download
+            </a>
+          </Button>
+        )}
+      </div>
+    </Section>
+  );
 }
 
 function Section({
