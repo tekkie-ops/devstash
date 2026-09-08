@@ -1,14 +1,17 @@
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { getCreatableItemTypes } from "@/lib/db/items";
 
 /**
- * The search field and New Item button are still display only — the sidebar
- * trigger is the one live control.
+ * The search field is still display only. The sidebar trigger and the New Item
+ * dialog are the live controls.
  */
-export function TopBar() {
+export async function TopBar() {
+  const itemTypes = await getCreatableItemTypes();
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b px-4">
       <SidebarTrigger />
@@ -29,10 +32,9 @@ export function TopBar() {
         </kbd>
       </div>
 
-      <Button className="ml-auto">
-        <Plus />
-        New Item
-      </Button>
+      <div className="ml-auto">
+        <CreateItemDialog types={itemTypes} />
+      </div>
     </header>
   );
 }

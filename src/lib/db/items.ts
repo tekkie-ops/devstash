@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import type { CollectionItemType } from "@/lib/db/collections";
 import { getDemoUserId } from "@/lib/db/user";
-import type { UpdateItemInput } from "@/lib/validations/items";
+import { CREATE_ITEM_TYPES } from "@/lib/validations/items";
+import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
 
 export interface ItemSummary {
   id: string;
@@ -160,6 +161,79 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
     },
     items: items.map(toItemSummary),
   };
+}
+
+/**
+ * The system item types offered in the New Item dialog, in a fixed order
+ * (`file` / `image` are Pro and excluded). Not user-scoped — system types are
+ * shared.
+ */
+export async function getCreatableItemTypes(): Promise<CollectionItemType[]> {
+  const types = await prisma.itemType.findMany({ where: { isSystem: true } });
+
+  return CREATE_ITEM_TYPES.map((name) =>
+    types.find((type) => type.name === name),
+  )
+    .filter((type): type is NonNullable<typeof type> => type !== undefined)
+    .map((type) => ({
+      id: type.id,
+      name: type.name,
+      label: toLabel(type.name),
+      icon: type.icon,
+      color: type.color,
+    }));
+}
+
+/**
+ * Creates an item for the demo user from the New Item dialog. Resolves the
+ * chosen type name to its system `ItemType`; returns null when there is no demo
+ * user or the type name is unknown. Every creatable type is text-kind, so
+ * `contentType` is always `"text"`. Returns the fresh `ItemDetail` so the caller
+ * can open the drawer without a second fetch.
+ */
+export async function createItem(
+  data: CreateItemInput,
+): Promise<ItemDetail | null> {
+  const userId = await getDemoUserId();
+
+  if (!userId) {
+    return null;
+  }
+
+  const itemType = await prisma.itemType.findFirst({
+    where: { isSystem: true, name: data.type },
+    select: { id: true },
+  });
+
+  if (!itemType) {
+    return null;
+  }
+
+  const created = await prisma.item.create({
+    data: {
+      title: data.title,
+      description: data.description,
+      content: data.content,
+      url: data.url,
+      language: data.language,
+      contentType: "text",
+      userId,
+      itemTypeId: itemType.id,
+      tags: {
+        create: data.tags.map((name) => ({
+          tag: {
+            connectOrCreate: {
+              where: { name },
+              create: { name },
+            },
+          },
+        })),
+      },
+    },
+    select: { id: true },
+  });
+
+  return getItemDetail(created.id);
 }
 
 /**
