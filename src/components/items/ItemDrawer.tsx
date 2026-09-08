@@ -5,8 +5,19 @@ import { useRouter } from "next/navigation";
 import { Copy, Pencil, Pin, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { updateItem } from "@/actions/items";
+import { deleteItem, updateItem } from "@/actions/items";
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +48,8 @@ interface ItemDrawerProps {
   error: string | null;
   /** Called with the refreshed detail after a successful save. */
   onSaved: (detail: ItemDetail) => void;
+  /** Called after a successful delete — closes the drawer and clears detail. */
+  onDeleted: () => void;
 }
 
 export function ItemDrawer({
@@ -46,6 +59,7 @@ export function ItemDrawer({
   loading,
   error,
   onSaved,
+  onDeleted,
 }: ItemDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -67,6 +81,7 @@ export function ItemDrawer({
             key={detail.id}
             detail={detail}
             onSaved={onSaved}
+            onDeleted={onDeleted}
           />
         )}
       </SheetContent>
@@ -82,9 +97,11 @@ export function ItemDrawer({
 function ItemDrawerContent({
   detail,
   onSaved,
+  onDeleted,
 }: {
   detail: ItemDetail;
   onSaved: (detail: ItemDetail) => void;
+  onDeleted: () => void;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "edit">("view");
@@ -167,7 +184,11 @@ function ItemDrawerContent({
         </div>
 
         {mode === "view" ? (
-          <ViewActionBar detail={detail} onEdit={startEditing} />
+          <ViewActionBar
+            detail={detail}
+            onEdit={startEditing}
+            onDeleted={onDeleted}
+          />
         ) : (
           <div className="flex items-center gap-2">
             <Button
@@ -329,16 +350,22 @@ function ReadOnlyMeta({ detail }: { detail: ItemDetail }) {
 
 /**
  * The favorite/pin/copy/edit/delete row. Favorite reflects the item's state
- * (amber when active); Favorite/Pin/Delete mutations land in a later feature —
- * only Copy and Edit are wired up.
+ * (amber when active); Favorite/Pin mutations land in a later feature — Copy,
+ * Edit and Delete are wired up.
  */
 function ViewActionBar({
   detail,
   onEdit,
+  onDeleted,
 }: {
   detail: ItemDetail;
   onEdit: () => void;
+  onDeleted: () => void;
 }) {
+  const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   function handleCopy() {
     const text = detail.content ?? detail.url ?? "";
     if (!text) {
@@ -349,6 +376,22 @@ function ViewActionBar({
       .writeText(text)
       .then(() => toast.success("Copied to clipboard"))
       .catch(() => toast.error("Couldn't copy to clipboard"));
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const result = await deleteItem(detail.id);
+    setDeleting(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    setConfirmOpen(false);
+    onDeleted();
+    toast.success("Item deleted");
+    router.refresh();
   }
 
   return (
@@ -378,14 +421,40 @@ function ViewActionBar({
           <Pencil className="size-4" />
           Edit
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Delete"
-        >
-          <Trash2 className="size-4 text-destructive" />
-        </Button>
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Delete"
+            >
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+              <AlertDialogDescription>
+                &ldquo;{detail.title}&rdquo; will be permanently deleted. This
+                cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                disabled={deleting}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void handleDelete();
+                }}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
