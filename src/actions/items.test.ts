@@ -72,10 +72,52 @@ describe("createItem action", () => {
   });
 
   it("rejects an unknown type", async () => {
-    const result = await createItem({ ...validCreateInput, type: "file" });
+    const result = await createItem({ ...validCreateInput, type: "banana" });
 
     expect(result.success).toBe(false);
     expect(createItemRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a file item with no uploaded file", async () => {
+    const result = await createItem({
+      ...validCreateInput,
+      type: "image",
+      content: null,
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: "Upload a file before saving",
+    });
+    expect(createItemRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("passes uploaded file metadata through for a file item", async () => {
+    const detail = { id: "item-file", title: "Runbook" };
+    createItemRecordMock.mockResolvedValue(detail);
+
+    const result = await createItem({
+      type: "file",
+      title: "Runbook",
+      description: null,
+      content: null,
+      url: null,
+      language: null,
+      tags: [],
+      fileUrl: "https://cdn.example.com/items/file/abc.pdf",
+      fileName: "runbook.pdf",
+      fileSize: 4096,
+    });
+
+    expect(createItemRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "file",
+        fileUrl: "https://cdn.example.com/items/file/abc.pdf",
+        fileName: "runbook.pdf",
+        fileSize: 4096,
+      }),
+    );
+    expect(result).toEqual({ success: true, data: detail });
   });
 
   it("requires a URL for link items", async () => {
@@ -109,6 +151,9 @@ describe("createItem action", () => {
       url: null,
       language: "typescript",
       tags: ["a", "b"],
+      fileUrl: null,
+      fileName: null,
+      fileSize: null,
     });
     expect(result).toEqual({ success: true, data: detail });
   });

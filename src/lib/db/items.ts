@@ -1,7 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import type { CollectionItemType } from "@/lib/db/collections";
 import { getDemoUserId } from "@/lib/db/user";
-import { CREATE_ITEM_TYPES } from "@/lib/validations/items";
+import { deleteR2Object, r2KeyFromUrl } from "@/lib/r2";
+import {
+  ALL_CREATE_ITEM_TYPES,
+  FILE_ITEM_TYPES,
+} from "@/lib/validations/items";
 import type { CreateItemInput, UpdateItemInput } from "@/lib/validations/items";
 
 export interface ItemSummary {
@@ -164,14 +168,13 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
 }
 
 /**
- * The system item types offered in the New Item dialog, in a fixed order
- * (`file` / `image` are Pro and excluded). Not user-scoped — system types are
- * shared.
+ * The system item types offered in the New Item dialog, in a fixed order.
+ * Not user-scoped — system types are shared.
  */
 export async function getCreatableItemTypes(): Promise<CollectionItemType[]> {
   const types = await prisma.itemType.findMany({ where: { isSystem: true } });
 
-  return CREATE_ITEM_TYPES.map((name) =>
+  return ALL_CREATE_ITEM_TYPES.map((name) =>
     types.find((type) => type.name === name),
   )
     .filter((type): type is NonNullable<typeof type> => type !== undefined)
@@ -187,9 +190,10 @@ export async function getCreatableItemTypes(): Promise<CollectionItemType[]> {
 /**
  * Creates an item for the demo user from the New Item dialog. Resolves the
  * chosen type name to its system `ItemType`; returns null when there is no demo
- * user or the type name is unknown. Every creatable type is text-kind, so
- * `contentType` is always `"text"`. Returns the fresh `ItemDetail` so the caller
- * can open the drawer without a second fetch.
+ * user or the type name is unknown. `file` / `image` items store the uploaded
+ * R2 object's metadata and `contentType: "file"`; every other type is text-kind.
+ * Returns the fresh `ItemDetail` so the caller can open the drawer without a
+ * second fetch.
  */
 export async function createItem(
   data: CreateItemInput,
@@ -209,14 +213,19 @@ export async function createItem(
     return null;
   }
 
+  const isFile = (FILE_ITEM_TYPES as readonly string[]).includes(data.type);
+
   const created = await prisma.item.create({
     data: {
       title: data.title,
       description: data.description,
-      content: data.content,
-      url: data.url,
-      language: data.language,
-      contentType: "text",
+      content: isFile ? null : data.content,
+      url: isFile ? null : data.url,
+      language: isFile ? null : data.language,
+      fileUrl: isFile ? data.fileUrl : null,
+      fileName: isFile ? data.fileName : null,
+      fileSize: isFile ? data.fileSize : null,
+      contentType: isFile ? "file" : "text",
       userId,
       itemTypeId: itemType.id,
       tags: {
@@ -330,8 +339,10 @@ export async function updateItem(
 /**
  * Permanently deletes an item, scoped to the demo user like every other query
  * here. `ItemTag` / `ItemCollection` join rows cascade on delete (see schema),
- * so no manual cleanup. Returns false when the id matches nothing the demo user
- * owns, true once the row is gone.
+ * so no manual cleanup there. A `file` / `image` item's backing R2 object is
+ * removed best-effort after the row is gone — a failure is logged, not fatal,
+ * since the item is already deleted. Returns false when the id matches nothing
+ * the demo user owns, true once the row is gone.
  */
 export async function deleteItem(id: string): Promise<boolean> {
   const userId = await getDemoUserId();
@@ -342,7 +353,7 @@ export async function deleteItem(id: string): Promise<boolean> {
 
   const existing = await prisma.item.findFirst({
     where: { id, userId },
-    select: { id: true },
+    select: { id: true, contentType: true, fileUrl: true },
   });
 
   if (!existing) {
@@ -350,6 +361,17 @@ export async function deleteItem(id: string): Promise<boolean> {
   }
 
   await prisma.item.delete({ where: { id } });
+
+  if (existing.contentType === "file" && existing.fileUrl) {
+    const key = r2KeyFromUrl(existing.fileUrl);
+    if (key) {
+      try {
+        await deleteR2Object(key);
+      } catch (error) {
+        console.error(`Failed to delete R2 object for item ${id}:`, error);
+      }
+    }
+  }
 
   return true;
 }
