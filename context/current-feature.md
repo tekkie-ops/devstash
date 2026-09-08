@@ -1,14 +1,25 @@
-# Current Feature
+# Current Feature: Markdown Editor
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Create a `MarkdownEditor` component with a tabbed Write/Preview interface.
+- Use it for the content field of **note** and **prompt** items only; `CodeEditor` stays for snippets and commands, unchanged.
+- Render Markdown with `react-markdown` + `remark-gfm` (GitHub Flavored Markdown).
+- Support display (readonly) and edit modes: readonly shows only the Preview tab; edit defaults to Write with Preview available.
+- Header with a copy button matching `CodeEditor`'s style; container/header styling matching the existing dark theme (`bg-[#1e1e1e]` container, `bg-[#2d2d2d]` header).
+- Fluid height capped at 400px, matching `CodeEditor` behavior.
+- Wire into all three integration points: `CreateItemDialog`, `ItemDrawer` edit mode, and `ItemDrawer` view mode (readonly) — for note and prompt content.
 
 ## Notes
+
+- Preview styling via a dedicated CSS class (e.g. `.markdown-preview`) for reliable dark-mode rendering, covering: distinct h1–h6 sizing/weight, dark code blocks (monospace), inline code with subtle background, ordered/unordered lists with proper indentation and bullets, blockquotes with a left border accent, blue links with hover state, and tables with borders + header background.
+- New deps expected: `react-markdown`, `remark-gfm`.
+- Component is out of the project's Vitest scope (components/RSCs are browser-verified only), so no new unit tests unless a utility is extracted.
+- Existing content-input pattern to mirror: `CODE_TYPES` gating in both `ItemDrawer.tsx` and `CreateItemDialog.tsx` from the Code Editor feature — this adds a parallel gate for note/prompt.
 
 
 ## History

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { deleteItem, updateItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
 import {
   AlertDialog,
@@ -42,6 +43,8 @@ const CONTENT_TYPES = ["snippet", "prompt", "command", "note"];
 const LANGUAGE_TYPES = ["snippet", "command"];
 /** Type names whose body is code — shown in a Monaco editor, not a textarea. */
 const CODE_TYPES = ["snippet", "command"];
+/** Type names whose body is prose — shown in a Markdown editor with Write/Preview. */
+const MARKDOWN_TYPES = ["note", "prompt"];
 
 interface ItemDrawerProps {
   open: boolean;
@@ -114,6 +117,7 @@ function ItemDrawerContent({
   const showContent = CONTENT_TYPES.includes(typeName);
   const showLanguage = LANGUAGE_TYPES.includes(typeName);
   const showCode = CODE_TYPES.includes(typeName);
+  const showMarkdown = MARKDOWN_TYPES.includes(typeName);
   const showUrl = typeName === "link";
 
   const [title, setTitle] = useState(detail.title);
@@ -251,6 +255,10 @@ function ItemDrawerContent({
                     language={language}
                     onChange={setContent}
                   />
+                </Field>
+              ) : showMarkdown ? (
+                <Field label="Content">
+                  <MarkdownEditor value={content} onChange={setContent} />
                 </Field>
               ) : (
                 <Field label="Content" htmlFor="item-content">
@@ -565,6 +573,8 @@ function ContentSection({ detail }: { detail: ItemDetail }) {
             language={detail.language}
             readOnly
           />
+        ) : MARKDOWN_TYPES.includes(detail.type.name) ? (
+          <MarkdownEditor value={detail.content} readOnly />
         ) : (
           <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
             {detail.content}
