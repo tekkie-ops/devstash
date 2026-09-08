@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,8 @@ const CONTENT_TYPES = ["snippet", "prompt", "command", "note"];
 const LANGUAGE_TYPES = ["snippet", "command"];
 /** Type names whose body is code — shown in a Monaco editor, not a textarea. */
 const CODE_TYPES = ["snippet", "command"];
+/** Type names whose body is prose — shown in a Markdown editor with Write/Preview. */
+const MARKDOWN_TYPES = ["note", "prompt"];
 
 /**
  * The "New Item" entry point in the top bar. Opens a modal with a type selector
@@ -53,6 +56,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
   const showContent = CONTENT_TYPES.includes(typeName);
   const showLanguage = LANGUAGE_TYPES.includes(typeName);
   const showCode = CODE_TYPES.includes(typeName);
+  const showMarkdown = MARKDOWN_TYPES.includes(typeName);
   const showUrl = typeName === "link";
 
   function reset() {
@@ -174,6 +178,10 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
                     language={language}
                     onChange={setContent}
                   />
+                </Field>
+              ) : showMarkdown ? (
+                <Field label="Content">
+                  <MarkdownEditor value={content} onChange={setContent} />
                 </Field>
               ) : (
                 <Field label="Content" htmlFor="create-item-content">
