@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { ItemCard } from "@/components/items/ItemCard";
+import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 
 export default async function ItemsByTypePage({
@@ -30,11 +31,13 @@ export default async function ItemsByTypePage({
       </header>
 
       {items.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        <ItemDrawerProvider>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        </ItemDrawerProvider>
       ) : (
         <p className="text-sm text-muted-foreground">
           No {type.label.toLowerCase()} yet.

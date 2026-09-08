@@ -17,6 +17,19 @@ export interface ItemTypeSummary extends CollectionItemType {
   itemCount: number;
 }
 
+/** Full item payload for the drawer detail view — the summary plus everything loaded on click. */
+export interface ItemDetail extends ItemSummary {
+  contentType: "text" | "file";
+  content: string | null;
+  url: string | null;
+  language: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  fileUrl: string | null;
+  createdAt: Date;
+  collections: { id: string; name: string }[];
+}
+
 /** Matches the canonical system-type ordering used elsewhere in the UI (see project-overview.md). */
 const SYSTEM_TYPE_ORDER = [
   "snippet",
@@ -145,6 +158,46 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
       color: matched.color,
     },
     items: items.map(toItemSummary),
+  };
+}
+
+/**
+ * Full detail for a single item, scoped to the demo user like every other
+ * dashboard query. Returns null when the id matches nothing the demo user owns.
+ */
+export async function getItemDetail(id: string): Promise<ItemDetail | null> {
+  const userId = await getDemoUserId();
+
+  if (!userId) {
+    return null;
+  }
+
+  const item = await prisma.item.findFirst({
+    where: { id, userId },
+    include: {
+      itemType: true,
+      tags: { include: { tag: true } },
+      collections: {
+        include: { collection: { select: { id: true, name: true } } },
+      },
+    },
+  });
+
+  if (!item) {
+    return null;
+  }
+
+  return {
+    ...toItemSummary(item),
+    contentType: item.contentType,
+    content: item.content,
+    url: item.url,
+    language: item.language,
+    fileName: item.fileName,
+    fileSize: item.fileSize,
+    fileUrl: item.fileUrl,
+    createdAt: item.createdAt,
+    collections: item.collections.map(({ collection }) => collection),
   };
 }
 
