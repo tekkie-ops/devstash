@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
+    "@monaco-editor/react": "^4.7.0",
     "@neondatabase/serverless": "^1.1.0",
     "@prisma/adapter-neon": "^7.9.1",
     "@prisma/client": "^7.9.1",
@@ -27,6 +28,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.33.0",
+    "monaco-editor": "^0.56.0",
     "next": "16.3.1",
     "next-auth": "^5.0.0-beta.32",
     "radix-ui": "^1.6.7",

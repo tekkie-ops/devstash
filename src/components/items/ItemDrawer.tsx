@@ -6,6 +6,7 @@ import { Copy, Pencil, Pin, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteItem, updateItem } from "@/actions/items";
+import { CodeEditor } from "@/components/items/CodeEditor";
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
 import {
   AlertDialog,
@@ -39,6 +40,8 @@ import { cn } from "@/lib/utils";
 const CONTENT_TYPES = ["snippet", "prompt", "command", "note"];
 /** Type names whose items carry an editable language tag. */
 const LANGUAGE_TYPES = ["snippet", "command"];
+/** Type names whose body is code — shown in a Monaco editor, not a textarea. */
+const CODE_TYPES = ["snippet", "command"];
 
 interface ItemDrawerProps {
   open: boolean;
@@ -110,6 +113,7 @@ function ItemDrawerContent({
   const typeName = detail.type.name;
   const showContent = CONTENT_TYPES.includes(typeName);
   const showLanguage = LANGUAGE_TYPES.includes(typeName);
+  const showCode = CODE_TYPES.includes(typeName);
   const showUrl = typeName === "link";
 
   const [title, setTitle] = useState(detail.title);
@@ -239,17 +243,26 @@ function ItemDrawerContent({
               />
             </Field>
 
-            {showContent && (
-              <Field label="Content" htmlFor="item-content">
-                <Textarea
-                  id="item-content"
-                  value={content}
-                  onChange={(event) => setContent(event.target.value)}
-                  rows={8}
-                  className="font-mono text-xs"
-                />
-              </Field>
-            )}
+            {showContent &&
+              (showCode ? (
+                <Field label="Content">
+                  <CodeEditor
+                    value={content}
+                    language={language}
+                    onChange={setContent}
+                  />
+                </Field>
+              ) : (
+                <Field label="Content" htmlFor="item-content">
+                  <Textarea
+                    id="item-content"
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    rows={8}
+                    className="font-mono text-xs"
+                  />
+                </Field>
+              ))}
 
             {showLanguage && (
               <Field label="Language" htmlFor="item-language">
@@ -300,7 +313,7 @@ function Field({
   children,
 }: {
   label: string;
-  htmlFor: string;
+  htmlFor?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -546,9 +559,17 @@ function ContentSection({ detail }: { detail: ItemDetail }) {
   if (detail.content) {
     return (
       <Section title="Content">
-        <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
-          {detail.content}
-        </pre>
+        {CODE_TYPES.includes(detail.type.name) ? (
+          <CodeEditor
+            value={detail.content}
+            language={detail.language}
+            readOnly
+          />
+        ) : (
+          <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
+            {detail.content}
+          </pre>
+        )}
       </Section>
     );
   }
