@@ -6,14 +6,14 @@ import { getR2Object, r2KeyFromUrl } from "@/lib/r2";
  * Streams a `file` / `image` item's R2 object back to the browser as an
  * attachment. Proxying (rather than linking straight to `R2_PUBLIC_URL`) keeps
  * the download same-origin — no R2 CORS config — and lets us force a download
- * with the original filename. Auth-gated + demo-user-scoped via `getItemDetail`.
+ * with the original filename. Auth-gated + owner-scoped via `getItemDetail`.
  */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return Response.json(
       { success: false, error: "Unauthorized" },
       { status: 401 },
@@ -21,7 +21,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const item = await getItemDetail(id);
+  const item = await getItemDetail(session.user.id, id);
 
   if (!item || item.contentType !== "file" || !item.fileUrl) {
     return Response.json(

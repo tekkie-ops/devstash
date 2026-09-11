@@ -1,15 +1,21 @@
-# Current Feature
+# Current Feature — Fix Item Authorization & File URL Validation
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Fix broken object-level authorization (audit finding #1): the item mutation server actions (`createItem`/`updateItem`/`deleteItem` in `src/actions/items.ts`) and the item detail/download API routes only check that *someone* is signed in, then operate on the hardcoded demo user's data — any self-registered account can read, edit, delete, and download the demo account's items. Scope these paths to the caller's own `session.user.id`.
+- Fix unvalidated `fileUrl` on create (audit finding #2): `createItem` accepts any non-blank string as `fileUrl` for `file`/`image` items and thumbnails render it directly — a caller can bypass the upload flow and hotlink arbitrary external content. Reject any `fileUrl` not under the configured `R2_PUBLIC_URL`.
 
 ## Notes
 
+- Approach for #1: thread an explicit `userId` (owner-first parameter) through `getItemDetail`, `createItem`, `updateItem`, `deleteItem` in `src/lib/db/items.ts`, removing their internal `getDemoUserId()` calls; the server actions and the two API routes pass `session.user.id`. The list/stat reads (`getPinnedItems`, `getRecentItems`, `getItemsByTypeSlug`, `getItemTypesWithCounts`, `getItemStats`) stay demo-scoped — that read gap is known and planned as the future "wire dashboard to session user" feature.
+- Signed in as `demo@devstash.io` (the standard dev flow), behavior is unchanged since the session id equals the demo id. Other accounts still see the demo-scoped lists but can no longer open, mutate, or download items they don't own (drawer will 404) — correct, and accepted until the dashboard is per-user.
+- Approach for #2: check `r2KeyFromUrl(fileUrl)` in the `createItem` server action after Zod parsing (server is the validation source of truth; keeping the env-dependent check out of the Zod schema keeps the schema pure/testable). Fails closed when `R2_PUBLIC_URL` is unset — correct, since without R2 config the upload route 503s and no legitimate file items can exist.
+- `updateItemSchema` has no file fields (edit mode never touches file metadata), so update has no equivalent gap.
+- Tests: update `src/actions/items.test.ts` for the new signatures (assert the session user id is passed through), mock `@/lib/r2` at the module boundary, and add fileUrl accept/reject cases.
 
 ## History
 
