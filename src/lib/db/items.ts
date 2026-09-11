@@ -14,10 +14,13 @@ export interface ItemSummary {
   description: string | null;
   isFavorite: boolean;
   isPinned: boolean;
+  createdAt: Date;
   updatedAt: Date;
   tags: string[];
   type: CollectionItemType;
   fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
 }
 
 export interface ItemTypeSummary extends CollectionItemType {
@@ -30,10 +33,6 @@ export interface ItemDetail extends ItemSummary {
   content: string | null;
   url: string | null;
   language: string | null;
-  fileName: string | null;
-  fileSize: number | null;
-  fileUrl: string | null;
-  createdAt: Date;
   collections: { id: string; name: string }[];
 }
 
@@ -59,10 +58,13 @@ function toItemSummary(item: {
   description: string | null;
   isFavorite: boolean;
   isPinned: boolean;
+  createdAt: Date;
   updatedAt: Date;
   itemType: { id: string; name: string; icon: string; color: string };
   tags: { tag: { name: string } }[];
   fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
 }): ItemSummary {
   return {
     id: item.id,
@@ -70,6 +72,7 @@ function toItemSummary(item: {
     description: item.description,
     isFavorite: item.isFavorite,
     isPinned: item.isPinned,
+    createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     tags: item.tags.map(({ tag }) => tag.name),
     type: {
@@ -80,6 +83,8 @@ function toItemSummary(item: {
       color: item.itemType.color,
     },
     fileUrl: item.fileUrl,
+    fileName: item.fileName,
+    fileSize: item.fileSize,
   };
 }
 
@@ -280,10 +285,6 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
     content: item.content,
     url: item.url,
     language: item.language,
-    fileName: item.fileName,
-    fileSize: item.fileSize,
-    fileUrl: item.fileUrl,
-    createdAt: item.createdAt,
     collections: item.collections.map(({ collection }) => collection),
   };
 }
