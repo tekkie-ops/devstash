@@ -1,15 +1,22 @@
-# Current Feature
+# Current Feature — Quick Copy Icon on Item Cards
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add a quick copy icon button to the item grid cards (`ItemCard`), placed in the card's lower-right corner.
+- Clicking it copies the item's content (text types) or URL (link type) to the clipboard with a "Copied to clipboard" toast, mirroring the drawer's Copy action.
+- Clicking the copy icon must NOT open the item drawer.
+- Hide the icon when the item has nothing to copy.
 
 ## Notes
 
+- Scope: `ItemCard` only (the grid on `/items/[type]` for text + link types). `ImageThumbnailCard` and `FileListRow` are out of scope — files/images have no text content to copy, and `FileListRow` already has a download action.
+- `ItemCard` is server-rendered inside `ItemDrawerTrigger`'s `<button>`, so the copy control cannot be a nested `<button>` (invalid HTML). Plan: wrap the card in a `relative` container and render the copy button as an absolutely-positioned sibling over the lower-right corner.
+- `ItemSummary` needs `content` + `url` pass-through fields (scalars already fetched by every query — same precedent as `fileUrl` in the Image Gallery View feature); `ItemDetail`'s duplicate declarations then collapse into the inherited ones.
+- No new unit tests expected: the new logic is display-side (out of Vitest scope) and the db change is a pass-through field mapping, same rationale as Image Gallery / File List View.
 
 ## History
 
