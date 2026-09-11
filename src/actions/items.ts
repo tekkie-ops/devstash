@@ -7,7 +7,12 @@ import {
   updateItem as updateItemRecord,
 } from "@/lib/db/items";
 import type { ItemDetail } from "@/lib/db/items";
-import { createItemSchema, updateItemSchema } from "@/lib/validations/items";
+import { r2KeyFromUrl } from "@/lib/r2";
+import {
+  FILE_ITEM_TYPES,
+  createItemSchema,
+  updateItemSchema,
+} from "@/lib/validations/items";
 
 export type CreateItemResult =
   | { success: true; data: ItemDetail }
@@ -22,9 +27,11 @@ export type DeleteItemResult =
   | { success: false; error: string };
 
 /**
- * Creates an item from the New Item dialog. Zod is the source of truth for
- * validation, including the "URL required for links" rule; the client only
- * mirrors it to disable the submit button.
+ * Creates an item owned by the signed-in user from the New Item dialog. Zod is
+ * the source of truth for validation, including the "URL required for links"
+ * rule; the client only mirrors it to disable the submit button. A `file` /
+ * `image` item's `fileUrl` must point at an object under our configured
+ * `R2_PUBLIC_URL` — anything else means the upload flow was bypassed.
  */
 export async function createItem(input: unknown): Promise<CreateItemResult> {
   const session = await auth();
@@ -40,8 +47,15 @@ export async function createItem(input: unknown): Promise<CreateItemResult> {
     };
   }
 
+  if (
+    (FILE_ITEM_TYPES as readonly string[]).includes(parsed.data.type) &&
+    (parsed.data.fileUrl === null || r2KeyFromUrl(parsed.data.fileUrl) === null)
+  ) {
+    return { success: false, error: "Invalid file URL" };
+  }
+
   try {
-    const created = await createItemRecord(parsed.data);
+    const created = await createItemRecord(session.user.id, parsed.data);
     if (!created) {
       return { success: false, error: "Couldn't create item" };
     }
@@ -53,8 +67,9 @@ export async function createItem(input: unknown): Promise<CreateItemResult> {
 }
 
 /**
- * Persists an edit from the item drawer. Zod is the source of truth for
- * validation; the client only guards the Save button on an empty title.
+ * Persists an edit from the item drawer, scoped to items the signed-in user
+ * owns. Zod is the source of truth for validation; the client only guards the
+ * Save button on an empty title.
  */
 export async function updateItem(
   itemId: string,
@@ -78,7 +93,7 @@ export async function updateItem(
   }
 
   try {
-    const updated = await updateItemRecord(itemId, parsed.data);
+    const updated = await updateItemRecord(session.user.id, itemId, parsed.data);
     if (!updated) {
       return { success: false, error: "Item not found" };
     }
@@ -90,8 +105,8 @@ export async function updateItem(
 }
 
 /**
- * Permanently deletes an item from the drawer's confirm dialog. Signed-in check
- * only, like `updateItem` — the dashboard is still demo-user-scoped.
+ * Permanently deletes an item from the drawer's confirm dialog, scoped to items
+ * the signed-in user owns.
  */
 export async function deleteItem(itemId: string): Promise<DeleteItemResult> {
   const session = await auth();
@@ -104,7 +119,7 @@ export async function deleteItem(itemId: string): Promise<DeleteItemResult> {
   }
 
   try {
-    const deleted = await deleteItemRecord(itemId);
+    const deleted = await deleteItemRecord(session.user.id, itemId);
     if (!deleted) {
       return { success: false, error: "Item not found" };
     }

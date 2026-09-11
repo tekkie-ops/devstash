@@ -5,7 +5,7 @@ import { getItemDetail } from "@/lib/db/items";
 
 /**
  * Full item detail for the drawer. Auth-gated (the page routes are covered by
- * proxy.ts, but /api/* is not), then delegates to the demo-user-scoped query.
+ * proxy.ts, but /api/* is not), then scoped to items the caller owns.
  */
 export async function GET(
   _request: Request,
@@ -13,7 +13,7 @@ export async function GET(
 ) {
   const session = await auth();
 
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json(
       { success: false, error: "Unauthorized" },
       { status: 401 },
@@ -21,7 +21,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const item = await getItemDetail(id);
+  const item = await getItemDetail(session.user.id, id);
 
   if (!item) {
     return NextResponse.json(

@@ -200,22 +200,16 @@ export async function getCreatableItemTypes(): Promise<CollectionItemType[]> {
 }
 
 /**
- * Creates an item for the demo user from the New Item dialog. Resolves the
- * chosen type name to its system `ItemType`; returns null when there is no demo
- * user or the type name is unknown. `file` / `image` items store the uploaded
- * R2 object's metadata and `contentType: "file"`; every other type is text-kind.
- * Returns the fresh `ItemDetail` so the caller can open the drawer without a
- * second fetch.
+ * Creates an item owned by `userId` from the New Item dialog. Resolves the
+ * chosen type name to its system `ItemType`; returns null when the type name is
+ * unknown. `file` / `image` items store the uploaded R2 object's metadata and
+ * `contentType: "file"`; every other type is text-kind. Returns the fresh
+ * `ItemDetail` so the caller can open the drawer without a second fetch.
  */
 export async function createItem(
+  userId: string,
   data: CreateItemInput,
 ): Promise<ItemDetail | null> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return null;
-  }
-
   const itemType = await prisma.itemType.findFirst({
     where: { isSystem: true, name: data.type },
     select: { id: true },
@@ -254,20 +248,17 @@ export async function createItem(
     select: { id: true },
   });
 
-  return getItemDetail(created.id);
+  return getItemDetail(userId, created.id);
 }
 
 /**
- * Full detail for a single item, scoped to the demo user like every other
- * dashboard query. Returns null when the id matches nothing the demo user owns.
+ * Full detail for a single item, scoped to its owner. Returns null when the id
+ * matches nothing `userId` owns.
  */
-export async function getItemDetail(id: string): Promise<ItemDetail | null> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return null;
-  }
-
+export async function getItemDetail(
+  userId: string,
+  id: string,
+): Promise<ItemDetail | null> {
   const item = await prisma.item.findFirst({
     where: { id, userId },
     include: {
@@ -292,22 +283,17 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
 }
 
 /**
- * Applies an edit from the drawer. Scoped to the demo user like every other
- * query here; returns null when the id matches nothing the demo user owns.
+ * Applies an edit from the drawer, scoped to the item's owner; returns null
+ * when the id matches nothing `userId` owns.
  * Tags are replaced wholesale — existing join rows are dropped and the new set
  * is connect-or-created. Returns the refreshed `ItemDetail` so the drawer can
  * update without a second fetch.
  */
 export async function updateItem(
+  userId: string,
   id: string,
   data: UpdateItemInput,
 ): Promise<ItemDetail | null> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return null;
-  }
-
   const existing = await prisma.item.findFirst({
     where: { id, userId },
     select: { id: true },
@@ -339,24 +325,18 @@ export async function updateItem(
     },
   });
 
-  return getItemDetail(id);
+  return getItemDetail(userId, id);
 }
 
 /**
- * Permanently deletes an item, scoped to the demo user like every other query
- * here. `ItemTag` / `ItemCollection` join rows cascade on delete (see schema),
- * so no manual cleanup there. A `file` / `image` item's backing R2 object is
- * removed best-effort after the row is gone — a failure is logged, not fatal,
- * since the item is already deleted. Returns false when the id matches nothing
- * the demo user owns, true once the row is gone.
+ * Permanently deletes an item, scoped to its owner. `ItemTag` /
+ * `ItemCollection` join rows cascade on delete (see schema), so no manual
+ * cleanup there. A `file` / `image` item's backing R2 object is removed
+ * best-effort after the row is gone — a failure is logged, not fatal, since the
+ * item is already deleted. Returns false when the id matches nothing `userId`
+ * owns, true once the row is gone.
  */
-export async function deleteItem(id: string): Promise<boolean> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return false;
-  }
-
+export async function deleteItem(userId: string, id: string): Promise<boolean> {
   const existing = await prisma.item.findFirst({
     where: { id, userId },
     select: { id: true, contentType: true, fileUrl: true },

@@ -7,11 +7,13 @@ const {
   createItemRecordMock,
   updateItemRecordMock,
   deleteItemRecordMock,
+  r2KeyFromUrlMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   createItemRecordMock: vi.fn(),
   updateItemRecordMock: vi.fn(),
   deleteItemRecordMock: vi.fn(),
+  r2KeyFromUrlMock: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({
@@ -23,6 +25,12 @@ vi.mock("@/lib/db/items", () => ({
   updateItem: updateItemRecordMock,
   deleteItem: deleteItemRecordMock,
 }));
+
+vi.mock("@/lib/r2", () => ({
+  r2KeyFromUrl: r2KeyFromUrlMock,
+}));
+
+const R2_BASE = "https://pub-test.r2.dev";
 
 const validInput = {
   title: "Updated title",
@@ -38,7 +46,11 @@ beforeEach(() => {
   createItemRecordMock.mockReset();
   updateItemRecordMock.mockReset();
   deleteItemRecordMock.mockReset();
+  r2KeyFromUrlMock.mockReset();
   authMock.mockResolvedValue({ user: { id: "user-1" } });
+  r2KeyFromUrlMock.mockImplementation((url: string) =>
+    url.startsWith(`${R2_BASE}/`) ? url.slice(R2_BASE.length + 1) : null,
+  );
 });
 
 describe("createItem action", () => {
@@ -104,20 +116,39 @@ describe("createItem action", () => {
       url: null,
       language: null,
       tags: [],
-      fileUrl: "https://cdn.example.com/items/file/abc.pdf",
+      fileUrl: `${R2_BASE}/items/file/abc.pdf`,
       fileName: "runbook.pdf",
       fileSize: 4096,
     });
 
     expect(createItemRecordMock).toHaveBeenCalledWith(
+      "user-1",
       expect.objectContaining({
         type: "file",
-        fileUrl: "https://cdn.example.com/items/file/abc.pdf",
+        fileUrl: `${R2_BASE}/items/file/abc.pdf`,
         fileName: "runbook.pdf",
         fileSize: 4096,
       }),
     );
     expect(result).toEqual({ success: true, data: detail });
+  });
+
+  it("rejects a file item whose fileUrl is not under our R2 public URL", async () => {
+    const result = await createItem({
+      type: "image",
+      title: "Hotlinked",
+      description: null,
+      content: null,
+      url: null,
+      language: null,
+      tags: [],
+      fileUrl: "https://evil.example.com/tracking-pixel.png",
+      fileName: "pixel.png",
+      fileSize: 69,
+    });
+
+    expect(result).toEqual({ success: false, error: "Invalid file URL" });
+    expect(createItemRecordMock).not.toHaveBeenCalled();
   });
 
   it("requires a URL for link items", async () => {
@@ -143,7 +174,7 @@ describe("createItem action", () => {
       tags: [" a ", "a", "b"],
     });
 
-    expect(createItemRecordMock).toHaveBeenCalledWith({
+    expect(createItemRecordMock).toHaveBeenCalledWith("user-1", {
       type: "snippet",
       title: "New snippet",
       description: "desc",
@@ -216,7 +247,7 @@ describe("updateItem action", () => {
       tags: [" a ", "a", "b"],
     });
 
-    expect(updateItemRecordMock).toHaveBeenCalledWith("item-1", {
+    expect(updateItemRecordMock).toHaveBeenCalledWith("user-1", "item-1", {
       title: "Updated title",
       description: "desc",
       content: "body",
@@ -273,7 +304,7 @@ describe("deleteItem action", () => {
 
     const result = await deleteItem("item-1");
 
-    expect(deleteItemRecordMock).toHaveBeenCalledWith("item-1");
+    expect(deleteItemRecordMock).toHaveBeenCalledWith("user-1", "item-1");
     expect(result).toEqual({ success: true });
   });
 
