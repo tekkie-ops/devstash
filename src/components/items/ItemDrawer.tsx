@@ -6,9 +6,10 @@ import { Copy, Download, Pencil, Pin, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteItem, updateItem } from "@/actions/items";
-import { CodeEditor } from "@/components/items/CodeEditor";
-import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
+import { CodeEditor } from "@/components/items/CodeEditor";
+import { Field } from "@/components/items/ItemFormField";
+import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +24,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -35,17 +35,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { formatLongDate } from "@/lib/dashboard";
 import type { ItemDetail } from "@/lib/db/items";
+import {
+  CODE_TYPES,
+  CONTENT_TYPES,
+  LANGUAGE_TYPES,
+  MARKDOWN_TYPES,
+} from "@/lib/item-types";
 import { formatFileSize } from "@/lib/upload";
 import { cn } from "@/lib/utils";
-
-/** Type names whose items carry an editable free-text body. */
-const CONTENT_TYPES = ["snippet", "prompt", "command", "note"];
-/** Type names whose items carry an editable language tag. */
-const LANGUAGE_TYPES = ["snippet", "command"];
-/** Type names whose body is code — shown in a Monaco editor, not a textarea. */
-const CODE_TYPES = ["snippet", "command"];
-/** Type names whose body is prose — shown in a Markdown editor with Write/Preview. */
-const MARKDOWN_TYPES = ["note", "prompt"];
 
 interface ItemDrawerProps {
   open: boolean;
@@ -313,28 +310,6 @@ function ItemDrawerContent({
         )}
       </div>
     </>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label
-        htmlFor={htmlFor}
-        className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-      >
-        {label}
-      </Label>
-      {children}
-    </div>
   );
 }
 

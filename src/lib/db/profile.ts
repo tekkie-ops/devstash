@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SYSTEM_TYPE_ORDER, toLabel } from "@/lib/item-types";
 
 export interface ProfileAccount {
   hasPassword: boolean;
@@ -18,22 +19,6 @@ export interface ProfileStats {
   itemCount: number;
   collectionCount: number;
   typeBreakdown: ProfileTypeBreakdown[];
-}
-
-/** Matches the canonical system-type ordering used elsewhere in the UI (see project-overview.md). */
-const SYSTEM_TYPE_ORDER = [
-  "snippet",
-  "prompt",
-  "command",
-  "note",
-  "file",
-  "image",
-  "link",
-];
-
-/** e.g. "snippet" -> "Snippets", matching the plural labels used elsewhere in the UI. */
-function toLabel(name: string): string {
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}s`;
 }
 
 export async function getProfileAccount(userId: string): Promise<ProfileAccount | null> {

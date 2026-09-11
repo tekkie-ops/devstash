@@ -1,15 +1,22 @@
-# Current Feature
+# Current Feature — Audit Cleanup (Findings #3–#6)
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- **#3** Deduplicate `toLabel` + `SYSTEM_TYPE_ORDER` (currently copied across `src/lib/db/collections.ts`, `src/lib/db/items.ts`, `src/lib/db/profile.ts`) into a shared `src/lib/item-types.ts`.
+- **#4** Deduplicate the content-field UI groups (`CONTENT_TYPES` / `LANGUAGE_TYPES` / `CODE_TYPES` / `MARKDOWN_TYPES`) and the `Field` label helper, both currently copied verbatim between `ItemDrawer.tsx` and `CreateItemDialog.tsx`.
+- **#5** Stop the collection queries from over-fetching: `COLLECTION_ITEMS_INCLUDE` pulls every scalar of every item in every collection (including full snippet bodies) when `toCollectionSummary` only reads `itemType` — narrow to a `select`.
+- **#6** Cap the three unbounded list queries: `getPinnedItems`, `getItemsByTypeSlug`'s items query, and `getFavoriteCollections` have no `take`, unlike their capped siblings.
 
 ## Notes
 
+- New `src/lib/item-types.ts` holds `toLabel`, `SYSTEM_TYPE_ORDER`, and the four UI type-group arrays (they're "which type shows what" metadata, so they belong with the type utilities rather than the Zod schemas). `CreateItemDialog`'s local `FILE_TYPES` is dropped in favor of the existing `FILE_ITEM_TYPES` export from `src/lib/validations/items.ts` (with the same inline readonly-string cast the actions already use).
+- `Field` moves to `src/components/items/ItemFormField.tsx`, unchanged.
+- Caps for #6: pinned items 12 (dashboard section), type-page items 100 (list page safety cap), favorite collections 12 (sidebar) — named module constants, not magic numbers. UI behavior is unchanged at seed scale.
+- Pure refactor otherwise: no behavior change intended anywhere. `toLabel` gains a small unit test since it's now a standalone exported utility (per coding-standards' "new utilities ship with tests").
 
 ## History
 
