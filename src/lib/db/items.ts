@@ -17,6 +17,7 @@ export interface ItemSummary {
   updatedAt: Date;
   tags: string[];
   type: CollectionItemType;
+  fileUrl: string | null;
 }
 
 export interface ItemTypeSummary extends CollectionItemType {
@@ -61,6 +62,7 @@ function toItemSummary(item: {
   updatedAt: Date;
   itemType: { id: string; name: string; icon: string; color: string };
   tags: { tag: { name: string } }[];
+  fileUrl: string | null;
 }): ItemSummary {
   return {
     id: item.id,
@@ -77,6 +79,7 @@ function toItemSummary(item: {
       icon: item.itemType.icon,
       color: item.itemType.color,
     },
+    fileUrl: item.fileUrl,
   };
 }
 
