@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CollectionItemType } from "@/lib/db/collections";
 import { getDemoUserId } from "@/lib/db/user";
+import { SYSTEM_TYPE_ORDER, toLabel } from "@/lib/item-types";
 import { deleteR2Object, r2KeyFromUrl } from "@/lib/r2";
 import {
   ALL_CREATE_ITEM_TYPES,
@@ -34,22 +35,6 @@ export interface ItemDetail extends ItemSummary {
   contentType: "text" | "file";
   language: string | null;
   collections: { id: string; name: string }[];
-}
-
-/** Matches the canonical system-type ordering used elsewhere in the UI (see project-overview.md). */
-const SYSTEM_TYPE_ORDER = [
-  "snippet",
-  "prompt",
-  "command",
-  "note",
-  "file",
-  "image",
-  "link",
-];
-
-/** e.g. "snippet" -> "Snippets", matching the plural labels used elsewhere in the UI. */
-function toLabel(name: string): string {
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}s`;
 }
 
 function toItemSummary(item: {
@@ -92,6 +77,12 @@ function toItemSummary(item: {
   };
 }
 
+/** Cap on the dashboard's Pinned section — it has no pagination to fall back on. */
+const PINNED_ITEMS_LIMIT = 12;
+
+/** Safety cap on the /items/[type] list page — it has no pagination to fall back on. */
+const TYPE_PAGE_ITEMS_LIMIT = 100;
+
 export async function getPinnedItems(): Promise<ItemSummary[]> {
   const userId = await getDemoUserId();
 
@@ -102,6 +93,7 @@ export async function getPinnedItems(): Promise<ItemSummary[]> {
   const items = await prisma.item.findMany({
     where: { userId, isPinned: true },
     orderBy: { updatedAt: "desc" },
+    take: PINNED_ITEMS_LIMIT,
     include: {
       itemType: true,
       tags: { include: { tag: true } },
@@ -161,6 +153,7 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
   const items = await prisma.item.findMany({
     where: { userId, itemTypeId: matched.id },
     orderBy: { updatedAt: "desc" },
+    take: TYPE_PAGE_ITEMS_LIMIT,
     include: {
       itemType: true,
       tags: { include: { tag: true } },

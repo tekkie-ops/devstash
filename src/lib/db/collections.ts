@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getDemoUserId } from "@/lib/db/user";
+import { toLabel } from "@/lib/item-types";
 
 export interface CollectionItemType {
   id: string;
@@ -18,11 +19,6 @@ export interface CollectionSummary {
   itemCount: number;
   /** Distinct item types present in the collection, most-used first. */
   types: CollectionItemType[];
-}
-
-/** e.g. "snippet" -> "Snippets", matching the plural labels used elsewhere in the UI. */
-function toLabel(name: string): string {
-  return `${name.charAt(0).toUpperCase()}${name.slice(1)}s`;
 }
 
 type CollectionWithItems = {
@@ -78,15 +74,23 @@ function toCollectionSummary(collection: CollectionWithItems): CollectionSummary
   };
 }
 
+/**
+ * `toCollectionSummary` only needs each item's type (for the count and the
+ * dominant-type ordering), so select just that — pulling full item rows here
+ * would drag every snippet body along on each dashboard/sidebar load.
+ */
 const COLLECTION_ITEMS_INCLUDE = {
   items: {
-    include: {
+    select: {
       item: {
-        include: { itemType: true },
+        select: { itemType: true },
       },
     },
   },
 } as const;
+
+/** Cap on the sidebar's Favorites group — it has no pagination to fall back on. */
+const FAVORITE_COLLECTIONS_LIMIT = 12;
 
 export async function getRecentCollections(
   limit: number,
@@ -117,6 +121,7 @@ export async function getFavoriteCollections(): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
     where: { userId, isFavorite: true },
     orderBy: { updatedAt: "desc" },
+    take: FAVORITE_COLLECTIONS_LIMIT,
     include: COLLECTION_ITEMS_INCLUDE,
   });
 

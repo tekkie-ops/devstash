@@ -6,10 +6,11 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
+import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { CodeEditor } from "@/components/items/CodeEditor";
 import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
+import { Field } from "@/components/items/ItemFormField";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
-import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,22 +21,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { CollectionItemType } from "@/lib/db/collections";
+import {
+  CODE_TYPES,
+  CONTENT_TYPES,
+  LANGUAGE_TYPES,
+  MARKDOWN_TYPES,
+} from "@/lib/item-types";
 import type { UploadKind } from "@/lib/upload";
 import { cn } from "@/lib/utils";
-
-/** Type names whose items carry a free-text body. */
-const CONTENT_TYPES = ["snippet", "prompt", "command", "note"];
-/** Type names whose items carry a language tag. */
-const LANGUAGE_TYPES = ["snippet", "command"];
-/** Type names whose body is code — shown in a Monaco editor, not a textarea. */
-const CODE_TYPES = ["snippet", "command"];
-/** Type names whose body is prose — shown in a Markdown editor with Write/Preview. */
-const MARKDOWN_TYPES = ["note", "prompt"];
-/** Type names whose body is an uploaded R2 object. */
-const FILE_TYPES = ["file", "image"];
+import { FILE_ITEM_TYPES } from "@/lib/validations/items";
 
 /**
  * The "New Item" entry point in the top bar. Opens a modal with a type selector
@@ -64,7 +60,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
   const showCode = CODE_TYPES.includes(typeName);
   const showMarkdown = MARKDOWN_TYPES.includes(typeName);
   const showUrl = typeName === "link";
-  const showFile = FILE_TYPES.includes(typeName);
+  const showFile = (FILE_ITEM_TYPES as readonly string[]).includes(typeName);
 
   function reset() {
     setTypeName(fallbackType);
@@ -280,27 +276,5 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label
-        htmlFor={htmlFor}
-        className="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-      >
-        {label}
-      </Label>
-      {children}
-    </div>
   );
 }
