@@ -26,6 +26,7 @@ npm test           # run unit tests once (vitest)
 npm run test:watch # run unit tests in watch mode
 npm run db:test    # Prisma/Neon connection smoke test
 npm run db:seed    # seed the database (prisma db seed)
+npm run db:clean-users # delete all users except demo@devstash.io (dry-run; --yes to execute)
 ```
 
 Unit tests use **Vitest** (`node` environment) and cover **server actions and utilities only** —
