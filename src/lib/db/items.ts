@@ -18,6 +18,8 @@ export interface ItemSummary {
   updatedAt: Date;
   tags: string[];
   type: CollectionItemType;
+  content: string | null;
+  url: string | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
@@ -30,8 +32,6 @@ export interface ItemTypeSummary extends CollectionItemType {
 /** Full item payload for the drawer detail view — the summary plus everything loaded on click. */
 export interface ItemDetail extends ItemSummary {
   contentType: "text" | "file";
-  content: string | null;
-  url: string | null;
   language: string | null;
   collections: { id: string; name: string }[];
 }
@@ -62,6 +62,8 @@ function toItemSummary(item: {
   updatedAt: Date;
   itemType: { id: string; name: string; icon: string; color: string };
   tags: { tag: { name: string } }[];
+  content: string | null;
+  url: string | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
@@ -82,6 +84,8 @@ function toItemSummary(item: {
       icon: item.itemType.icon,
       color: item.itemType.color,
     },
+    content: item.content,
+    url: item.url,
     fileUrl: item.fileUrl,
     fileName: item.fileName,
     fileSize: item.fileSize,
@@ -282,8 +286,6 @@ export async function getItemDetail(id: string): Promise<ItemDetail | null> {
   return {
     ...toItemSummary(item),
     contentType: item.contentType,
-    content: item.content,
-    url: item.url,
     language: item.language,
     collections: item.collections.map(({ collection }) => collection),
   };
