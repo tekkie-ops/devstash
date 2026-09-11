@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
+import { FileListRow } from "@/components/items/FileListRow";
 import { ImageThumbnailCard } from "@/components/items/ImageThumbnailCard";
 import { ItemCard } from "@/components/items/ItemCard";
 import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
@@ -19,6 +20,7 @@ export default async function ItemsByTypePage({
 
   const { type, items } = result;
   const isImageType = type.name === "image";
+  const isFileType = type.name === "file";
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -34,15 +36,23 @@ export default async function ItemsByTypePage({
 
       {items.length > 0 ? (
         <ItemDrawerProvider>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) =>
-              isImageType ? (
-                <ImageThumbnailCard key={item.id} item={item} />
-              ) : (
-                <ItemCard key={item.id} item={item} />
-              ),
-            )}
-          </div>
+          {isFileType ? (
+            <div className="divide-y overflow-hidden rounded-xl border bg-card">
+              {items.map((item) => (
+                <FileListRow key={item.id} item={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((item) =>
+                isImageType ? (
+                  <ImageThumbnailCard key={item.id} item={item} />
+                ) : (
+                  <ItemCard key={item.id} item={item} />
+                ),
+              )}
+            </div>
+          )}
         </ItemDrawerProvider>
       ) : (
         <p className="text-sm text-muted-foreground">
