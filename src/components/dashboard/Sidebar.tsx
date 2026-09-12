@@ -15,6 +15,7 @@ import {
 import { SidebarUser } from "@/components/dashboard/SidebarUser";
 import { SidebarTypesNav } from "@/components/dashboard/SidebarTypesNav";
 import { SidebarCollectionsNav } from "@/components/dashboard/SidebarCollectionsNav";
+import { auth } from "@/auth";
 import {
   getFavoriteCollections,
   getRecentNonFavoriteCollections,
@@ -24,12 +25,16 @@ import { getItemTypesWithCounts } from "@/lib/db/items";
 const RECENT_COLLECTION_LIMIT = 5;
 
 export async function Sidebar() {
-  const [itemTypes, favoriteCollections, recentCollections] =
-    await Promise.all([
-      getItemTypesWithCounts(),
-      getFavoriteCollections(),
-      getRecentNonFavoriteCollections(RECENT_COLLECTION_LIMIT),
-    ]);
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  const [itemTypes, favoriteCollections, recentCollections] = userId
+    ? await Promise.all([
+        getItemTypesWithCounts(),
+        getFavoriteCollections(userId),
+        getRecentNonFavoriteCollections(userId, RECENT_COLLECTION_LIMIT),
+      ])
+    : [await getItemTypesWithCounts(), [], []];
 
   return (
     <SidebarShell collapsible="icon">

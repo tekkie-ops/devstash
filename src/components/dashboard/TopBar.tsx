@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 
+import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -32,7 +33,8 @@ export async function TopBar() {
         </kbd>
       </div>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <CreateCollectionDialog />
         <CreateItemDialog types={itemTypes} />
       </div>
     </header>

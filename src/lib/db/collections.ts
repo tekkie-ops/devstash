@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getDemoUserId } from "@/lib/db/user";
 import { toLabel } from "@/lib/item-types";
+import type { CreateCollectionInput } from "@/lib/validations/collections";
 
 export interface CollectionItemType {
   id: string;
@@ -93,14 +93,9 @@ const COLLECTION_ITEMS_INCLUDE = {
 const FAVORITE_COLLECTIONS_LIMIT = 12;
 
 export async function getRecentCollections(
+  userId: string,
   limit: number,
 ): Promise<CollectionSummary[]> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return [];
-  }
-
   const collections = await prisma.collection.findMany({
     where: { userId },
     orderBy: { updatedAt: "desc" },
@@ -111,13 +106,9 @@ export async function getRecentCollections(
   return collections.map(toCollectionSummary);
 }
 
-export async function getFavoriteCollections(): Promise<CollectionSummary[]> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return [];
-  }
-
+export async function getFavoriteCollections(
+  userId: string,
+): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
     where: { userId, isFavorite: true },
     orderBy: { updatedAt: "desc" },
@@ -129,14 +120,9 @@ export async function getFavoriteCollections(): Promise<CollectionSummary[]> {
 }
 
 export async function getRecentNonFavoriteCollections(
+  userId: string,
   limit: number,
 ): Promise<CollectionSummary[]> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return [];
-  }
-
   const collections = await prisma.collection.findMany({
     where: { userId, isFavorite: false },
     orderBy: { updatedAt: "desc" },
@@ -147,20 +133,34 @@ export async function getRecentNonFavoriteCollections(
   return collections.map(toCollectionSummary);
 }
 
-export async function getCollectionStats(): Promise<{
+export async function getCollectionStats(userId: string): Promise<{
   total: number;
   favorites: number;
 }> {
-  const userId = await getDemoUserId();
-
-  if (!userId) {
-    return { total: 0, favorites: 0 };
-  }
-
   const [total, favorites] = await Promise.all([
     prisma.collection.count({ where: { userId } }),
     prisma.collection.count({ where: { userId, isFavorite: true } }),
   ]);
 
   return { total, favorites };
+}
+
+/**
+ * Creates a collection owned by `userId` from the New Collection dialog. No
+ * items/type association at create time — those are set later.
+ */
+export async function createCollection(
+  userId: string,
+  data: CreateCollectionInput,
+): Promise<CollectionSummary> {
+  const collection = await prisma.collection.create({
+    data: {
+      name: data.name,
+      description: data.description,
+      userId,
+    },
+    include: COLLECTION_ITEMS_INCLUDE,
+  });
+
+  return toCollectionSummary(collection);
 }

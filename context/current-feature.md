@@ -1,15 +1,30 @@
-# Current Feature
+# Current Feature: Collection Create
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add a "New Collection" button in the top bar (`src/components/dashboard/TopBar.tsx`), alongside the existing "New Item" button, that opens a modal to create a collection.
+- Modal fields: name (required) and description (optional). Show a toast on success or failure.
+- On success, close the modal, reset its fields, and make sure the new collection shows up immediately (sidebar's Recent/Favorites lists and the dashboard's Recent Collections + stats) via `router.refresh()`, matching the item-create pattern.
+- Collections are fully user-scoped to the real signed-in user (`session.user.id` from `auth()`), not the hardcoded demo user.
 
 ## Notes
 
+**Follow the items pattern, with one deviation:** items use Server Actions (`src/actions/items.ts`) for client-side create/update/delete. For this feature, per explicit instruction, client-side collection creation goes through an **API route** instead (e.g. `POST /api/collections`), not a server action — server components still read directly via `lib/db` functions, same as items.
+
+**Migrate existing collection reads to real user scoping** (this is broader than just the new create path): `src/lib/db/collections.ts`'s `getRecentCollections`, `getFavoriteCollections`, `getRecentNonFavoriteCollections`, and `getCollectionStats` currently call `getDemoUserId()` internally (`src/lib/db/user.ts`) instead of taking an explicit `userId`. Mirror the Sept 11 "Fix Item Authorization" change (`436af21`) that did the same for `src/lib/db/items.ts`: change these four functions to accept `userId: string` as their first parameter (drop the internal `getDemoUserId()` calls), and update every call site (`Sidebar.tsx`, `SidebarCollectionsNav.tsx`, `StatsCards.tsx`, `RecentCollections.tsx`, or wherever they're invoked) to pass `session.user.id` from `auth()`.
+
+**New collection creation:**
+- `src/lib/db/collections.ts`: add a `createCollection(userId, data)` function (name + optional description), following `createItem`'s shape in `src/lib/db/items.ts` — returns the created `CollectionSummary` (or equivalent) on success.
+- `src/lib/validations/collections.ts` (new file, matching `src/lib/validations/items.ts`'s pattern): a Zod schema — `name` required trimmed non-empty, `description` optional trimmed (blank -> null per `updateItemSchema`'s `optionalTrimmedText` pattern).
+- `POST /api/collections` (new route, matching the auth-check style of `GET /api/items/[id]`): `auth()` gate (401 if no `session.user.id`), parse/validate the body with the new schema, call `createCollection`, return `{ success, data }` / `{ success, error }` per `coding-standards.md`'s error-handling convention.
+- Client: a new `CreateCollectionDialog.tsx` (client component, shadcn `Dialog` — reuse the hand-authored `src/components/ui/dialog.tsx`, not the CLI, since the CLI has repeatedly produced a broken `cn` import in this repo per `CreateItemDialog`'s history) with Name + Description fields, submit disabled until name is non-blank, `fetch("/api/collections", { method: "POST", ... })`, sonner toast on success/failure, `router.refresh()` on success.
+- `TopBar.tsx` renders both the New Item and New Collection triggers.
+
+**Out of scope:** editing/deleting collections, adding items to a collection via this modal, and a `defaultTypeId` field on create (the schema supports it but the user only asked for name + description) — these are not part of this feature.
 
 ## History
 
