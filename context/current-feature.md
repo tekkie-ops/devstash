@@ -1,16 +1,23 @@
-# Current Feature
+# Current Feature: Homepage Mockup
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Build a standalone marketing homepage prototype at `prototypes/homepage/` (`index.html`, `styles.css`, `script.js`) — static HTML/CSS/JS, not a Next.js route.
+- Hero section: "chaos to order" visual — a chaos container (8 floating/animated icons for Notion, GitHub, Slack, VS Code, browser tabs, terminal, text file, bookmark) → pulsing arrow → simplified dashboard preview (sidebar + item-card grid with type-colored top borders).
+- Chaos icons animate via `requestAnimationFrame`: drift, bounce off walls, subtle rotate/scale pulse, repel from mouse cursor.
+- Sections: fixed nav (logo, Features/Pricing links, Sign In/Get Started), hero text with gradient headline + CTAs, 6-card Features grid (Code Snippets, AI Prompts, Instant Search, Commands, Files & Docs, Collections — each in its type accent color), two-column AI section (Pro badge + checklist / code-editor "AI Generated Tags" mockup), Pricing (Free vs Pro with monthly/yearly toggle, Pro highlighted "Most Popular"), CTA section, footer with dynamic copyright year.
+- Scroll-triggered fade-in animations; navbar becomes more opaque on scroll.
+- Responsive: chaos/arrow/dashboard stack vertically on mobile, arrow rotates 90° to point down, grids collapse to single column.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Dark theme. Item-type accent colors: Snippet `#3b82f6`, Prompt `#f59e0b`, Command `#06b6d4`, Note `#22c55e`, File `#64748b`, Image `#ec4899`, URL `#6366f1` (note: these differ from the app's real `project-overview.md` type colors — this spec defines its own palette for the mockup).
+- This is a marketing/design prototype, separate from the actual Next.js app under `src/` — plain HTML/CSS/JS, no framework, no build step, no Prisma/DB/auth involvement.
+- Full spec: @context/features/homepage-mockup-spec.md
 
 ## History
 
