@@ -18,5 +18,6 @@ export const config = {
     "/items/:path*",
     "/profile/:path*",
     "/collections/:path*",
+    "/settings/:path*",
   ],
 };

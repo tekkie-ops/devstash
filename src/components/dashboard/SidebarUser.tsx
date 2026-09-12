@@ -18,8 +18,9 @@ import { signOutAction } from "@/actions/auth";
 import { auth } from "@/auth";
 
 /**
- * Bottom user area. The settings gear links to the profile page; the
- * avatar/name button opens a dropdown with sign out.
+ * Bottom user area. The settings gear links to the settings page; the
+ * avatar/name button opens a dropdown with links to profile and settings,
+ * plus sign out.
  */
 export async function SidebarUser() {
   const session = await auth();
@@ -47,6 +48,12 @@ export async function SidebarUser() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top">
+            <DropdownMenuItem asChild>
+              <Link href="/profile">Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/settings">Settings</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem asChild variant="destructive">
               <form action={signOutAction} className="contents">
                 <button type="submit" className="w-full text-left">
@@ -56,8 +63,8 @@ export async function SidebarUser() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <SidebarMenuAction asChild aria-label="Profile">
-          <Link href="/profile">
+        <SidebarMenuAction asChild aria-label="Settings">
+          <Link href="/settings">
             <Settings />
           </Link>
         </SidebarMenuAction>

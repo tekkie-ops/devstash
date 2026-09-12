@@ -1,14 +1,22 @@
-# Current Feature
+# Current Feature: Settings Page
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- New protected page at `/settings`.
+- Add a "Settings" link in the user dropdown menu at the bottom of the sidebar (`SidebarUser.tsx`). The dropdown now has Profile, Settings, then Sign out (Profile added alongside Settings per user follow-up, since it was previously only reachable via the gear icon).
+- Move the Account actions currently on `/profile` — Change Password (`ChangePasswordForm`) and Delete Account (`DeleteAccountDialog`) — to the new `/settings` page.
+- `/profile` keeps the Account info card (avatar/name/email/member-since) and `ProfileStats`; the Change Password and Danger Zone cards are removed from it.
 
 ## Notes
+
+- The user's request refers to "forgot password" as one of the actions to move, but `/profile` has no forgot-password UI — only a "Change password" card (`ChangePasswordForm`, backed by `changePasswordAction` in `src/actions/profile.ts`). Treating "forgot password" as referring to that Change Password card. The standalone `/forgot-password` flow (for signed-out users) is unrelated and stays where it is.
+- Protect `/settings` the same way `/profile` is protected: add `/settings/:path*` to `src/proxy.ts`'s matcher.
+- `SidebarUser.tsx`'s settings-gear `SidebarMenuAction` currently links to `/profile`; confirmed with the user it should now point to `/settings` instead. The new "Settings" dropdown item also links to `/settings`.
+- Existing components to move/reuse: `src/components/profile/ChangePasswordForm.tsx`, `src/components/profile/DeleteAccountDialog.tsx`.
 
 ## History
 
