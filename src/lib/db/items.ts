@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { CollectionItemType } from "@/lib/db/collections";
 import { getDemoUserId } from "@/lib/db/user";
 import { SYSTEM_TYPE_ORDER, toLabel } from "@/lib/item-types";
+import { getSkip, ITEMS_PER_PAGE } from "@/lib/pagination";
 import { deleteR2Object, r2KeyFromUrl } from "@/lib/r2";
 import {
   ALL_CREATE_ITEM_TYPES,
@@ -80,9 +81,6 @@ function toItemSummary(item: {
 /** Cap on the dashboard's Pinned section — it has no pagination to fall back on. */
 const PINNED_ITEMS_LIMIT = 12;
 
-/** Safety cap on the /items/[type] list page — it has no pagination to fall back on. */
-const TYPE_PAGE_ITEMS_LIMIT = 100;
-
 export async function getPinnedItems(): Promise<ItemSummary[]> {
   const userId = await getDemoUserId();
 
@@ -125,12 +123,17 @@ export async function getRecentItems(limit: number): Promise<ItemSummary[]> {
 
 /**
  * Resolves a URL slug (the lowercased plural label, e.g. "snippets") to its
- * system item type and that type's items for the demo user, newest first.
- * Returns null when the slug matches no system type.
+ * system item type and that type's items for the demo user, newest first,
+ * one `ITEMS_PER_PAGE` page at a time. Returns null when the slug matches no
+ * system type.
  */
-export async function getItemsByTypeSlug(slug: string): Promise<{
+export async function getItemsByTypeSlug(
+  slug: string,
+  page: number,
+): Promise<{
   type: CollectionItemType;
   items: ItemSummary[];
+  totalCount: number;
 } | null> {
   const userId = await getDemoUserId();
 
@@ -150,15 +153,20 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
     return null;
   }
 
-  const items = await prisma.item.findMany({
-    where: { userId, itemTypeId: matched.id },
-    orderBy: { updatedAt: "desc" },
-    take: TYPE_PAGE_ITEMS_LIMIT,
-    include: {
-      itemType: true,
-      tags: { include: { tag: true } },
-    },
-  });
+  const where = { userId, itemTypeId: matched.id };
+  const [items, totalCount] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: getSkip(page, ITEMS_PER_PAGE),
+      take: ITEMS_PER_PAGE,
+      include: {
+        itemType: true,
+        tags: { include: { tag: true } },
+      },
+    }),
+    prisma.item.count({ where }),
+  ]);
 
   return {
     type: {
@@ -169,27 +177,29 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
       color: matched.color,
     },
     items: items.map(toItemSummary),
+    totalCount,
   };
 }
-
-/** Safety cap on the /collections/[id] detail page — it has no pagination to fall back on. */
-const COLLECTION_DETAIL_ITEMS_LIMIT = 100;
 
 /**
  * Items belonging to a collection, scoped to `userId` so a caller can't read
  * another user's items by guessing a collection id — the same "userId is the
- * security boundary" approach used throughout this file. Pair with
- * `getCollectionDetail` (which itself owner-checks the collection) to 404 an
- * unknown/not-owned collection rather than silently returning an empty list.
+ * security boundary" approach used throughout this file. One `ITEMS_PER_PAGE`
+ * page at a time; pair with `getCollectionDetail` (which itself owner-checks
+ * the collection and already reports the collection's total item count) to
+ * 404 an unknown/not-owned collection rather than silently returning an empty
+ * list.
  */
 export async function getItemsByCollectionId(
   userId: string,
   collectionId: string,
+  page: number,
 ): Promise<ItemSummary[]> {
   const items = await prisma.item.findMany({
     where: { userId, collections: { some: { collectionId } } },
     orderBy: { updatedAt: "desc" },
-    take: COLLECTION_DETAIL_ITEMS_LIMIT,
+    skip: getSkip(page, ITEMS_PER_PAGE),
+    take: ITEMS_PER_PAGE,
     include: {
       itemType: true,
       tags: { include: { tag: true } },
