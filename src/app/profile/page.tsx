@@ -1,16 +1,8 @@
 import Link from "next/link";
 
 import { UserAvatar } from "@/components/auth/UserAvatar";
-import { ChangePasswordForm } from "@/components/profile/ChangePasswordForm";
-import { DeleteAccountDialog } from "@/components/profile/DeleteAccountDialog";
 import { ProfileStats } from "@/components/profile/ProfileStats";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/auth";
 import { getProfileAccount, getProfileStats } from "@/lib/db/profile";
 
@@ -62,30 +54,6 @@ export default async function ProfilePage() {
       </Card>
 
       <ProfileStats stats={stats} />
-
-      {account?.hasPassword ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Change password</CardTitle>
-            <CardDescription>Update the password used to sign in.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChangePasswordForm />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-destructive">Danger zone</CardTitle>
-          <CardDescription>
-            Permanently delete your account and all of its data.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DeleteAccountDialog />
-        </CardContent>
-      </Card>
 
       <Link href="/dashboard" className="text-sm text-primary underline-offset-4 hover:underline">
         Back to dashboard
