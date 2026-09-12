@@ -435,6 +435,30 @@ export async function deleteItem(userId: string, id: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * A user's favorited items, most-recently-favorited first (updatedAt is used
+ * as the favorited-at proxy — the schema has no separate favoritedAt column,
+ * the same convention `isFavorite`/`updatedAt` sorting already uses
+ * elsewhere). Capped rather than paginated, mirroring `getSearchableItems`'s
+ * safety-net pattern.
+ */
+export async function getFavoriteItems(
+  userId: string,
+  limit: number,
+): Promise<ItemSummary[]> {
+  const items = await prisma.item.findMany({
+    where: { userId, isFavorite: true },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    include: {
+      itemType: true,
+      tags: { include: { tag: true } },
+    },
+  });
+
+  return items.map(toItemSummary);
+}
+
 export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
   const userId = await getDemoUserId();
 
