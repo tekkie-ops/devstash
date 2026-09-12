@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Pencil, Pin, Trash2 } from "lucide-react";
+import { Copy, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteItem } from "@/actions/items";
@@ -19,23 +19,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ItemFavoriteButton } from "@/components/items/ItemFavoriteButton";
+import { ItemPinButton } from "@/components/items/ItemPinButton";
 import type { ItemDetail } from "@/lib/db/items";
-import { cn } from "@/lib/utils";
 
 /**
- * The favorite/pin/copy/edit/delete row. Favorite, Copy, Edit and Delete are
- * wired up; Pin's mutation lands in a later feature.
+ * The favorite/pin/copy/edit/delete row. All five are wired up.
  */
 export function ViewActionBar({
   detail,
   onEdit,
   onDeleted,
   onFavorited,
+  onPinned,
 }: {
   detail: ItemDetail;
   onEdit: () => void;
   onDeleted: () => void;
   onFavorited: (detail: ItemDetail) => void;
+  onPinned: (detail: ItemDetail) => void;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -77,12 +78,7 @@ export function ViewActionBar({
         showLabel
         onToggled={onFavorited}
       />
-      <Button type="button" variant="ghost" size="sm">
-        <Pin
-          className={cn("size-4", detail.isPinned && "text-foreground")}
-        />
-        Pin
-      </Button>
+      <ItemPinButton detail={detail} showLabel onToggled={onPinned} />
       <Button type="button" variant="ghost" size="sm" onClick={handleCopy}>
         <Copy className="size-4" />
         Copy

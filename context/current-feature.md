@@ -1,16 +1,23 @@
-# Current Feature
+# Current Feature: Pinned Items
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Create a `toggleItemPin` server action (mirroring the existing `toggleItemFavorite` pattern)
+- Make the Pin button in `ItemDrawer` clickable (currently renders but has no `onClick`)
+- Optimistic UI updates for instant feedback
+- Toast notification on success/error
+- Pinned items sort to top of listings
+- Pin icon on `ItemCard` remains a static indicator (not a toggle control)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Scope is items only — collections are not pinnable.
+- Follow the Favorite Button pattern from the "Favorite Toggle — Drawer, Collection Page & Cards" feature (`e5206ec`): `toggleItemFavorite` in `src/lib/db/items.ts` + `src/actions/items.ts`, `useToggleItemFavorite` hook, `ItemFavoriteButton` component. Mirror these for pin (`toggleItemPin`, `useToggleItemPin`, an `ItemPinButton`-equivalent) rather than reusing the favorite ones directly.
+- Source spec: @context/features/pinned-spec.md
 
 ## History
 

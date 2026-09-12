@@ -99,6 +99,7 @@ export function ItemDrawerProvider({
         onSaved={setDetail}
         onDeleted={handleDeleted}
         onFavorited={setDetail}
+        onPinned={setDetail}
       />
     </ItemDrawerContext.Provider>
   );
