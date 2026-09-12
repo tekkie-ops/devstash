@@ -40,6 +40,8 @@ interface ItemDrawerProps {
   onSaved: (detail: ItemDetail) => void;
   /** Called after a successful delete — closes the drawer and clears detail. */
   onDeleted: () => void;
+  /** Called with the refreshed detail after a successful favorite toggle. */
+  onFavorited: (detail: ItemDetail) => void;
 }
 
 export function ItemDrawer({
@@ -51,6 +53,7 @@ export function ItemDrawer({
   availableCollections,
   onSaved,
   onDeleted,
+  onFavorited,
 }: ItemDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -74,6 +77,7 @@ export function ItemDrawer({
             availableCollections={availableCollections}
             onSaved={onSaved}
             onDeleted={onDeleted}
+            onFavorited={onFavorited}
           />
         )}
       </SheetContent>
@@ -91,11 +95,13 @@ function ItemDrawerContent({
   availableCollections,
   onSaved,
   onDeleted,
+  onFavorited,
 }: {
   detail: ItemDetail;
   availableCollections: CollectionOption[];
   onSaved: (detail: ItemDetail) => void;
   onDeleted: () => void;
+  onFavorited: (detail: ItemDetail) => void;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "edit">("view");
@@ -189,6 +195,7 @@ function ItemDrawerContent({
             detail={detail}
             onEdit={startEditing}
             onDeleted={onDeleted}
+            onFavorited={onFavorited}
           />
         ) : (
           <div className="flex items-center gap-2">

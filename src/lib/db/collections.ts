@@ -298,6 +298,34 @@ export async function updateCollection(
 }
 
 /**
+ * Flips isFavorite on a collection, scoped to its owner. Returns the
+ * refreshed CollectionSummary so callers (the detail page, card, dropdown)
+ * can update without a second fetch; returns null when the id matches
+ * nothing userId owns.
+ */
+export async function toggleCollectionFavorite(
+  userId: string,
+  id: string,
+): Promise<CollectionSummary | null> {
+  const existing = await prisma.collection.findFirst({
+    where: { id, userId },
+    select: { isFavorite: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  const collection = await prisma.collection.update({
+    where: { id },
+    data: { isFavorite: !existing.isFavorite },
+    include: COLLECTION_ITEMS_INCLUDE,
+  });
+
+  return toCollectionSummary(collection);
+}
+
+/**
  * Deletes a collection, scoped to its owner. Only the `ItemCollection`
  * membership rows for this collection cascade — the `Item` rows themselves,
  * and any other collection memberships they have, are untouched. Returns

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Pencil, Pin, Star, Trash2 } from "lucide-react";
+import { Copy, Pencil, Pin, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteItem } from "@/actions/items";
@@ -18,22 +18,24 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ItemFavoriteButton } from "@/components/items/ItemFavoriteButton";
 import type { ItemDetail } from "@/lib/db/items";
 import { cn } from "@/lib/utils";
 
 /**
- * The favorite/pin/copy/edit/delete row. Favorite reflects the item's state
- * (amber when active); Favorite/Pin mutations land in a later feature — Copy,
- * Edit and Delete are wired up.
+ * The favorite/pin/copy/edit/delete row. Favorite, Copy, Edit and Delete are
+ * wired up; Pin's mutation lands in a later feature.
  */
 export function ViewActionBar({
   detail,
   onEdit,
   onDeleted,
+  onFavorited,
 }: {
   detail: ItemDetail;
   onEdit: () => void;
   onDeleted: () => void;
+  onFavorited: (detail: ItemDetail) => void;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -69,15 +71,12 @@ export function ViewActionBar({
 
   return (
     <div className="flex items-center gap-1">
-      <Button type="button" variant="ghost" size="sm">
-        <Star
-          className={cn(
-            "size-4",
-            detail.isFavorite && "fill-amber-400 text-amber-400",
-          )}
-        />
-        Favorite
-      </Button>
+      <ItemFavoriteButton
+        itemId={detail.id}
+        isFavorite={detail.isFavorite}
+        showLabel
+        onToggled={onFavorited}
+      />
       <Button type="button" variant="ghost" size="sm">
         <Pin
           className={cn("size-4", detail.isPinned && "text-foreground")}

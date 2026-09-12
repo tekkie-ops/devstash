@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Star, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
+import { CollectionFavoriteButton } from "@/components/collections/CollectionFavoriteButton";
 import { DeleteCollectionDialog } from "@/components/collections/DeleteCollectionDialog";
 import { EditCollectionDialog } from "@/components/collections/EditCollectionDialog";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { CollectionSummary } from "@/lib/db/collections";
 
 /**
  * Edit/Delete/Favorite buttons on the /collections/[id] detail page — the
- * direct-button counterpart to CollectionCard's dropdown menu. Favorite is
- * display-only for now, per this feature's spec. Deleting redirects back to
- * /collections since the detail page it's shown on no longer exists.
+ * direct-button counterpart to CollectionCard's dropdown menu. Deleting
+ * redirects back to /collections since the detail page it's shown on no
+ * longer exists.
  */
 export function CollectionDetailActions({
   collection,
@@ -25,15 +25,7 @@ export function CollectionDetailActions({
 
   return (
     <div className="flex items-center gap-1">
-      <Button type="button" variant="ghost" size="sm">
-        <Star
-          className={cn(
-            "size-4",
-            collection.isFavorite && "fill-amber-400 text-amber-400",
-          )}
-        />
-        Favorite
-      </Button>
+      <CollectionFavoriteButton collection={collection} showLabel />
       <Button
         type="button"
         variant="ghost"

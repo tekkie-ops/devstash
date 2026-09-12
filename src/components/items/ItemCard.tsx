@@ -1,6 +1,7 @@
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
 import { CopyItemButton } from "@/components/items/CopyItemButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
+import { ItemFavoriteButton } from "@/components/items/ItemFavoriteButton";
 import { ItemStatusIcons } from "@/components/items/ItemStatusIcons";
 import { Badge } from "@/components/ui/badge";
 import { formatItemDate } from "@/lib/dashboard";
@@ -26,7 +27,7 @@ export function ItemCard({ item }: { item: ItemSummary }) {
           <div className="flex items-start gap-3">
             <ItemTypeTile type={item.type} />
 
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col pr-7">
               <div className="flex items-center gap-2">
                 <h3 className="truncate font-medium">{item.title}</h3>
                 <ItemStatusIcons
@@ -61,6 +62,12 @@ export function ItemCard({ item }: { item: ItemSummary }) {
           )}
         </article>
       </ItemDrawerTrigger>
+
+      <ItemFavoriteButton
+        itemId={item.id}
+        isFavorite={item.isFavorite}
+        className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground"
+      />
 
       {copyText && (
         <CopyItemButton
