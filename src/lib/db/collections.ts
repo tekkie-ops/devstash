@@ -189,6 +189,41 @@ export async function getCollectionDetail(
   return toCollectionSummary(collection);
 }
 
+export interface SearchableCollection {
+  id: string;
+  name: string;
+  itemCount: number;
+}
+
+/** Safety cap on the command palette's pre-fetched collection list. */
+const SEARCH_COLLECTIONS_LIMIT = 500;
+
+/**
+ * Lightweight collection listing for the command palette — just what a
+ * result row shows (name, item count), skipping `COLLECTION_ITEMS_INCLUDE`'s
+ * per-item type join since the palette only needs a count.
+ */
+export async function getSearchableCollections(
+  userId: string,
+): Promise<SearchableCollection[]> {
+  const collections = await prisma.collection.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    take: SEARCH_COLLECTIONS_LIMIT,
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { items: true } },
+    },
+  });
+
+  return collections.map((collection) => ({
+    id: collection.id,
+    name: collection.name,
+    itemCount: collection._count.items,
+  }));
+}
+
 export async function getCollectionStats(userId: string): Promise<{
   total: number;
   favorites: number;

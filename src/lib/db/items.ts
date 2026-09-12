@@ -456,6 +456,66 @@ export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
     );
 }
 
+export interface SearchableItem {
+  id: string;
+  title: string;
+  type: CollectionItemType;
+  preview: string | null;
+}
+
+/** Safety cap on the command palette's pre-fetched item list. */
+const SEARCH_ITEMS_LIMIT = 500;
+
+/** Truncates a preview string to a single result-row line. */
+function toPreview(text: string | null): string | null {
+  if (!text) {
+    return null;
+  }
+
+  const trimmed = text.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  return trimmed.length > 140 ? `${trimmed.slice(0, 140)}…` : trimmed;
+}
+
+/**
+ * Lightweight item listing for the command palette — just what a result row
+ * shows (title, type, a short preview), not the full content body. Filtering
+ * itself happens entirely client-side (cmdk's built-in fuzzy match), so this
+ * is fetched once per dashboard load rather than per keystroke.
+ */
+export async function getSearchableItems(
+  userId: string,
+): Promise<SearchableItem[]> {
+  const items = await prisma.item.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    take: SEARCH_ITEMS_LIMIT,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      content: true,
+      itemType: true,
+    },
+  });
+
+  return items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    type: {
+      id: item.itemType.id,
+      name: item.itemType.name,
+      label: toLabel(item.itemType.name),
+      icon: item.itemType.icon,
+      color: item.itemType.color,
+    },
+    preview: toPreview(item.description ?? item.content),
+  }));
+}
+
 export async function getItemStats(): Promise<{
   total: number;
   favorites: number;
