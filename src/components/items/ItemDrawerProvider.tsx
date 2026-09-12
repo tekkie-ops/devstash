@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { ItemDrawer } from "@/components/items/ItemDrawer";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface ItemDrawerContextValue {
@@ -30,9 +31,17 @@ export function useItemDrawer(): ItemDrawerContextValue {
 /**
  * Holds the drawer's open/selected/loading state so the pages that render item
  * cards can stay server components. Fetches detail on click via /api/items/[id]
- * — no navigation.
+ * — no navigation. `availableCollections` is fetched by the server-component
+ * page that renders this provider and passed straight through to the drawer's
+ * edit form.
  */
-export function ItemDrawerProvider({ children }: { children: ReactNode }) {
+export function ItemDrawerProvider({
+  children,
+  availableCollections,
+}: {
+  children: ReactNode;
+  availableCollections: CollectionOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -86,6 +95,7 @@ export function ItemDrawerProvider({ children }: { children: ReactNode }) {
         detail={detail}
         loading={loading}
         error={error}
+        availableCollections={availableCollections}
         onSaved={setDetail}
         onDeleted={handleDeleted}
       />

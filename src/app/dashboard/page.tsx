@@ -1,10 +1,18 @@
+import { auth } from "@/auth";
 import { PinnedItems } from "@/components/dashboard/PinnedItems";
 import { RecentCollections } from "@/components/dashboard/RecentCollections";
 import { RecentItems } from "@/components/dashboard/RecentItems";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
+import { getCollectionsForSelect } from "@/lib/db/collections";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const availableCollections = userId
+    ? await getCollectionsForSelect(userId)
+    : [];
+
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-10">
       <header className="flex flex-col gap-1">
@@ -14,7 +22,7 @@ export default function DashboardPage() {
 
       <StatsCards />
       <RecentCollections />
-      <ItemDrawerProvider>
+      <ItemDrawerProvider availableCollections={availableCollections}>
         <PinnedItems />
         <RecentItems />
       </ItemDrawerProvider>

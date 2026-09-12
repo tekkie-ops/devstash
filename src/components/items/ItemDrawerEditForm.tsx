@@ -1,11 +1,12 @@
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
 import { Section } from "@/components/items/ItemDetailSection";
 import { Field } from "@/components/items/ItemFormField";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatLongDate } from "@/lib/dashboard";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 
 interface EditFormProps {
@@ -22,6 +23,9 @@ interface EditFormProps {
   onUrlChange: (value: string) => void;
   tagsInput: string;
   onTagsInputChange: (value: string) => void;
+  collectionIds: string[];
+  onCollectionIdsChange: (ids: string[]) => void;
+  availableCollections: CollectionOption[];
   showContent: boolean;
   showCode: boolean;
   showMarkdown: boolean;
@@ -30,7 +34,7 @@ interface EditFormProps {
 }
 
 /**
- * The item drawer's editable fields, plus the read-only type/collections/dates
+ * The item drawer's editable fields, plus the read-only created/updated dates
  * block beneath them. Rendered in place of ItemDrawerBody while in edit mode.
  */
 export function EditForm({
@@ -47,6 +51,9 @@ export function EditForm({
   onUrlChange,
   tagsInput,
   onTagsInputChange,
+  collectionIds,
+  onCollectionIdsChange,
+  availableCollections,
   showContent,
   showCode,
   showMarkdown,
@@ -133,27 +140,23 @@ export function EditForm({
         </p>
       </Field>
 
+      <Field label="Collections">
+        <CollectionMultiSelect
+          collections={availableCollections}
+          selectedIds={collectionIds}
+          onChange={onCollectionIdsChange}
+        />
+      </Field>
+
       <ReadOnlyMeta detail={detail} />
     </div>
   );
 }
 
-/** Type / collections / dates — shown in edit mode but not editable. */
+/** Dates — shown in edit mode but not editable. */
 function ReadOnlyMeta({ detail }: { detail: ItemDetail }) {
   return (
     <div className="flex flex-col gap-6 border-t pt-6">
-      {detail.collections.length > 0 && (
-        <Section title="Collections">
-          <div className="flex flex-wrap gap-1.5">
-            {detail.collections.map((collection) => (
-              <Badge key={collection.id} variant="outline">
-                {collection.name}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-      )}
-
       <Section title="Details">
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex items-center justify-between">

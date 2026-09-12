@@ -1,15 +1,23 @@
-# Current Feature
+# Current Feature: Add Item to Collections
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add a multi-select "Collections" input to the New Item dialog (`CreateItemDialog.tsx`) so a new item can be added to one or more collections at creation time.
+- Add the same multi-select "Collections" input to the item drawer's edit form (`ItemDrawerEditForm.tsx`) so an existing item's collection memberships can be changed.
+- Persist the selected collections via `ItemCollection` join rows when creating or updating an item.
+- Support an item belonging to zero, one, or multiple collections (many-to-many, per the schema).
 
 ## Notes
 
+- Scope is limited to the input/selection UI and the create/update persistence — do NOT build out collection detail/listing pages (e.g. `/collections/[id]`) as part of this feature.
+- Collections to choose from should be the signed-in user's own collections (same ownership scoping already used elsewhere, e.g. `getRecentCollections`).
+- `createItem`/`updateItem` (`src/lib/db/items.ts`) and their Zod schemas (`src/lib/validations/items.ts`) will need a `collectionIds` field; `getItemDetail`/`ItemDetail` already returns `collections: {id,name}[]` for display, so the edit form can seed initial selection from that.
+- Follow existing patterns: Server Actions for the create/update mutations (already the case), Zod validation, `{ success, data, error }` result shape.
+- Add/update Vitest coverage for the schema and action changes per project testing standards.
 
 ## History
 

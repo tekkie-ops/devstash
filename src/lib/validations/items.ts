@@ -43,6 +43,16 @@ export const updateItemSchema = z.object({
     .array(z.string().trim().min(1, "Tags cannot be empty"))
     .transform((tags) => Array.from(new Set(tags)))
     .default([]),
+  /**
+   * Collections to place the item in. Ids are not validated for existence or
+   * ownership here — the db layer re-checks both against the caller's own
+   * collections before connecting anything, so an unknown or someone else's id
+   * is silently dropped rather than trusted.
+   */
+  collectionIds: z
+    .array(z.string().trim().min(1))
+    .transform((ids) => Array.from(new Set(ids)))
+    .default([]),
 });
 
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;

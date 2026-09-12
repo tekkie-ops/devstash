@@ -1,9 +1,11 @@
 import { Search } from "lucide-react";
 
+import { auth } from "@/auth";
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
 import { CreateItemDialog } from "@/components/items/CreateItemDialog";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { getCollectionsForSelect } from "@/lib/db/collections";
 import { getCreatableItemTypes } from "@/lib/db/items";
 
 /**
@@ -11,7 +13,13 @@ import { getCreatableItemTypes } from "@/lib/db/items";
  * dialog are the live controls.
  */
 export async function TopBar() {
-  const itemTypes = await getCreatableItemTypes();
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  const [itemTypes, collections] = await Promise.all([
+    getCreatableItemTypes(),
+    userId ? getCollectionsForSelect(userId) : Promise.resolve([]),
+  ]);
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b px-4">
@@ -35,7 +43,7 @@ export async function TopBar() {
 
       <div className="ml-auto flex items-center gap-2">
         <CreateCollectionDialog />
-        <CreateItemDialog types={itemTypes} />
+        <CreateItemDialog types={itemTypes} collections={collections} />
       </div>
     </header>
   );

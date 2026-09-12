@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { createItem } from "@/actions/items";
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { CodeEditor } from "@/components/items/CodeEditor";
+import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
 import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
 import { Field } from "@/components/items/ItemFormField";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
@@ -22,7 +23,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { CollectionItemType } from "@/lib/db/collections";
+import type {
+  CollectionItemType,
+  CollectionOption,
+} from "@/lib/db/collections";
 import {
   CODE_TYPES,
   CONTENT_TYPES,
@@ -38,7 +42,13 @@ import { FILE_ITEM_TYPES } from "@/lib/validations/items";
  * and the fields relevant to that type, then calls the `createItem` server
  * action. On success: toast, close, and refresh so the new item shows up.
  */
-export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
+export function CreateItemDialog({
+  types,
+  collections,
+}: {
+  types: CollectionItemType[];
+  collections: CollectionOption[];
+}) {
   const router = useRouter();
   const fallbackType = types[0]?.name ?? "snippet";
 
@@ -52,6 +62,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
   const [language, setLanguage] = useState("");
   const [url, setUrl] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -70,6 +81,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
     setLanguage("");
     setUrl("");
     setTagsInput("");
+    setCollectionIds([]);
     setUploadedFile(null);
     setUploading(false);
   }
@@ -110,6 +122,7 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
+      collectionIds,
     });
     setSubmitting(false);
 
@@ -257,6 +270,14 @@ export function CreateItemDialog({ types }: { types: CollectionItemType[] }) {
               <p className="text-xs text-muted-foreground">
                 Separate tags with commas.
               </p>
+            </Field>
+
+            <Field label="Collections">
+              <CollectionMultiSelect
+                collections={collections}
+                selectedIds={collectionIds}
+                onChange={setCollectionIds}
+              />
             </Field>
           </div>
 

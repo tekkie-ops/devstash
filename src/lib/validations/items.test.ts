@@ -14,6 +14,7 @@ describe("updateItemSchema", () => {
     url: null,
     language: "typescript",
     tags: ["react", "hooks"],
+    collectionIds: ["col_1", "col_2"],
   };
 
   it("accepts a well-formed payload", () => {
@@ -48,6 +49,7 @@ describe("updateItemSchema", () => {
       url: null,
       language: null,
       tags: [],
+      collectionIds: [],
     });
   });
 
@@ -83,6 +85,17 @@ describe("updateItemSchema", () => {
       updateItemSchema.safeParse({ ...valid, tags: ["ok", "  "] }).success,
     ).toBe(false);
   });
+
+  it("drops duplicate collection ids and defaults to an empty array", () => {
+    expect(
+      updateItemSchema.parse({ ...valid, collectionIds: ["a", "b", "a"] })
+        .collectionIds,
+    ).toEqual(["a", "b"]);
+
+    expect(
+      updateItemSchema.parse({ title: "Only a title" }).collectionIds,
+    ).toEqual([]);
+  });
 });
 
 describe("createItemSchema", () => {
@@ -94,6 +107,7 @@ describe("createItemSchema", () => {
     url: null,
     language: "typescript",
     tags: ["react", "hooks"],
+    collectionIds: ["col_1"],
   };
 
   it("accepts a well-formed payload and defaults the file fields to null", () => {
