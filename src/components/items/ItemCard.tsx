@@ -1,8 +1,7 @@
-import { Pin, Star } from "lucide-react";
-
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
 import { CopyItemButton } from "@/components/items/CopyItemButton";
 import { ItemDrawerTrigger } from "@/components/items/ItemDrawerTrigger";
+import { ItemStatusIcons } from "@/components/items/ItemStatusIcons";
 import { Badge } from "@/components/ui/badge";
 import { formatItemDate } from "@/lib/dashboard";
 import type { ItemSummary } from "@/lib/db/items";
@@ -30,18 +29,10 @@ export function ItemCard({ item }: { item: ItemSummary }) {
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex items-center gap-2">
                 <h3 className="truncate font-medium">{item.title}</h3>
-                {item.isPinned && (
-                  <Pin
-                    aria-label="Pinned"
-                    className="size-3.5 shrink-0 text-muted-foreground"
-                  />
-                )}
-                {item.isFavorite && (
-                  <Star
-                    aria-label="Favorite"
-                    className="size-3.5 shrink-0 fill-amber-400 text-amber-400"
-                  />
-                )}
+                <ItemStatusIcons
+                  isPinned={item.isPinned}
+                  isFavorite={item.isFavorite}
+                />
               </div>
 
               <time
