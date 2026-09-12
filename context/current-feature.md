@@ -1,14 +1,39 @@
-# Current Feature
+# Current Feature: Collection Edit, Delete & Favorite
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- On `/collections/[id]`, add Edit, Delete, and Favorite buttons/icons to the page.
+- Favorite is icon/button only for now — no backend wiring, no `isFavorite` mutation yet.
+- Edit opens a modal to edit the collection's metadata (name, description).
+- Delete requires a confirmation before proceeding.
+- Deleting a collection must NOT delete its items — items should simply no longer belong to that
+  collection (only the `ItemCollection` join rows for that collection go away; the `Item` rows and
+  their other collection memberships are untouched).
+- On `CollectionCard` (used on both `/collections` and the dashboard's Recent Collections), the
+  existing 3-dot icon should open a dropdown with Edit, Delete, and Favorite actions.
+- Clicking anywhere else on the card still navigates to `/collections/[id]` — only the dropdown
+  trigger/menu should intercept the click.
 
 ## Notes
+
+- `Collection.isFavorite` already exists in the schema (no migration needed) — this feature only
+  adds the UI affordance, per the goal of not implementing favorite behavior yet.
+- Deleting a `Collection` row already cascades the `ItemCollection` join rows via
+  `onDelete: Cascade` in the schema, and does not touch `Item` rows — schema behavior already
+  matches the "items stay, only membership goes away" requirement.
+- Collection Create (`0000aab`) used a `POST /api/collections` API route rather than a Server
+  Action, per that feature's explicit spec. Follow the same pattern for edit/delete
+  (`PATCH`/`DELETE /api/collections/[id]`) for consistency, unless there's a reason to diverge.
+- `CollectionCard.tsx` currently wraps the whole card in a `Link` to `/collections/[id]` (set by
+  Dashboard UI Phase 3 / Dashboard Collections). Adding a dropdown trigger inside it will need
+  restructuring so the trigger doesn't also navigate (e.g. `stopPropagation` on the trigger, or
+  making the card a `div` with an internal link/overlay instead of an outer `<a>`).
+- `/collections/[id]`'s own action buttons are separate from the card's dropdown — same three
+  actions (Edit/Delete/Favorite), just surfaced directly on the detail page instead of in a menu.
 
 
 

@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { toLabel } from "@/lib/item-types";
-import type { CreateCollectionInput } from "@/lib/validations/collections";
+import type {
+  CreateCollectionInput,
+  UpdateCollectionInput,
+} from "@/lib/validations/collections";
 
 export interface CollectionItemType {
   id: string;
@@ -216,4 +219,58 @@ export async function createCollection(
   });
 
   return toCollectionSummary(collection);
+}
+
+/**
+ * Updates a collection's name/description, scoped to its owner. Returns null
+ * when the id isn't one `userId` owns.
+ */
+export async function updateCollection(
+  userId: string,
+  id: string,
+  data: UpdateCollectionInput,
+): Promise<CollectionSummary | null> {
+  const existing = await prisma.collection.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  const collection = await prisma.collection.update({
+    where: { id },
+    data: {
+      name: data.name,
+      description: data.description,
+    },
+    include: COLLECTION_ITEMS_INCLUDE,
+  });
+
+  return toCollectionSummary(collection);
+}
+
+/**
+ * Deletes a collection, scoped to its owner. Only the `ItemCollection`
+ * membership rows for this collection cascade — the `Item` rows themselves,
+ * and any other collection memberships they have, are untouched. Returns
+ * false when the id isn't one `userId` owns.
+ */
+export async function deleteCollection(
+  userId: string,
+  id: string,
+): Promise<boolean> {
+  const existing = await prisma.collection.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return false;
+  }
+
+  await prisma.collection.delete({ where: { id } });
+
+  return true;
 }

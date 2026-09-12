@@ -20,3 +20,8 @@ export const createCollectionSchema = z.object({
 });
 
 export type CreateCollectionInput = z.infer<typeof createCollectionSchema>;
+
+/** Same shape as create — editing a collection only changes its name/description. */
+export const updateCollectionSchema = createCollectionSchema;
+
+export type UpdateCollectionInput = CreateCollectionInput;
