@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToggleCollectionFavorite } from "@/hooks/use-toggle-collection-favorite";
 import type { CollectionSummary } from "@/lib/db/collections";
 
 /**
@@ -19,7 +20,7 @@ import type { CollectionSummary } from "@/lib/db/collections";
  * The card itself is a Link to /collections/[id]; this menu is an absolutely
  * positioned sibling (not nested inside the Link) so it intercepts its own
  * clicks without needing stopPropagation — same pattern as ItemCard's
- * CopyItemButton. Favorite is display-only for now, per this feature's spec.
+ * CopyItemButton.
  */
 export function CollectionActionsMenu({
   collection,
@@ -28,6 +29,8 @@ export function CollectionActionsMenu({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { pending: favoriting, toggle: toggleFavorite } =
+    useToggleCollectionFavorite();
 
   return (
     <>
@@ -58,7 +61,10 @@ export function CollectionActionsMenu({
             <Trash2 />
             Delete
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem
+            disabled={favoriting}
+            onSelect={() => void toggleFavorite(collection.id)}
+          >
             <Star
               className={
                 collection.isFavorite ? "fill-amber-400 text-amber-400" : undefined

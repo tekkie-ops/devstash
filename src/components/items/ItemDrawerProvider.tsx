@@ -98,6 +98,7 @@ export function ItemDrawerProvider({
         availableCollections={availableCollections}
         onSaved={setDetail}
         onDeleted={handleDeleted}
+        onFavorited={setDetail}
       />
     </ItemDrawerContext.Provider>
   );

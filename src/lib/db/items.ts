@@ -402,6 +402,32 @@ export async function updateItem(
 }
 
 /**
+ * Flips isFavorite on an item, scoped to its owner. Returns the refreshed
+ * ItemDetail so callers (the drawer, item cards) can update without a second
+ * fetch; returns null when the id matches nothing userId owns.
+ */
+export async function toggleItemFavorite(
+  userId: string,
+  id: string,
+): Promise<ItemDetail | null> {
+  const existing = await prisma.item.findFirst({
+    where: { id, userId },
+    select: { isFavorite: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  await prisma.item.update({
+    where: { id },
+    data: { isFavorite: !existing.isFavorite },
+  });
+
+  return getItemDetail(userId, id);
+}
+
+/**
  * Permanently deletes an item, scoped to its owner. `ItemTag` /
  * `ItemCollection` join rows cascade on delete (see schema), so no manual
  * cleanup there. A `file` / `image` item's backing R2 object is removed

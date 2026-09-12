@@ -1,16 +1,24 @@
-# Current Feature
+# Current Feature: Favorite Toggle (Drawer, Collection Page, Cards)
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Wire up the item drawer's existing Favorite button (`ViewActionBar` in `src/components/items/ItemDrawerActionBar.tsx`) so clicking it actually toggles `Item.isFavorite`, instead of only reflecting state.
+- Wire up the collection detail page's existing Favorite button (`CollectionDetailActions` in `src/components/collections/CollectionDetailActions.tsx`) so clicking it toggles `Collection.isFavorite`.
+- Wire up the collection card's dropdown Favorite/Unfavorite item (`CollectionActionsMenu` in `src/components/collections/CollectionActionsMenu.tsx`), currently a disabled `DropdownMenuItem`.
+- Add a favorite-toggle affordance directly on item cards (`ItemCard`) and collection cards (`CollectionCard`) — not just inside the drawer/detail page — so a user can favorite/unfavorite without opening either. Follow the existing sibling-overlay pattern already used for `CopyItemButton` (`ItemCard`) and `CollectionActionsMenu` (`CollectionCard`) so the toggle click doesn't trigger card navigation/drawer-open.
+- All four surfaces should reflect the same state and update immediately (toast + `router.refresh()`, matching the existing pin/delete/edit mutation pattern in this codebase) without a page reload.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- No favorite-toggle server action or query function exists yet for either items or collections — `updateItemSchema` has no `isFavorite` field and `CollectionActionsMenu`'s menu item is `disabled`. This needs new, minimal mutations (e.g. `toggleItemFavorite` / `toggleCollectionFavorite`) rather than routing through the general-purpose `updateItem`/`updateCollection` edit forms — favoriting is a single-field toggle, not a form edit.
+- Item mutations in this codebase go through Server Actions (`src/actions/items.ts`); collection mutations go through API routes (`src/app/api/collections/[id]/route.ts`) — follow whichever pattern already exists for that entity rather than introducing a new one.
+- Ownership/auth must be enforced the same way existing item/collection mutations do (`session.user.id`, not the old demo-user hardcoding) — see the "Fix Item Authorization" and Collection Create/Edit history entries.
+- `ItemStatusIcons` (shared by `ItemRow`, `ItemCard`, `ImageThumbnailCard`, `FileListRow`) is currently a pure display indicator, not a button — decide whether the new card-level toggle reuses/extends it or is a separate overlay button; don't change its behavior on the three surfaces this feature doesn't target (`ItemRow`, `ImageThumbnailCard`, `FileListRow`) unless asked.
+- Pin toggling (`Pin` buttons in the drawer) is explicitly out of scope — only Favorite.
 
 ## History
 
