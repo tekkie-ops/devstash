@@ -1,6 +1,7 @@
 import { Files, FolderHeart, Folders, Star, type LucideIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { auth } from "@/auth";
 import { getCollectionStats } from "@/lib/db/collections";
 import { getItemStats } from "@/lib/db/items";
 
@@ -25,8 +26,11 @@ function StatCard({ label, value, icon: Icon }: Stat) {
 }
 
 export async function StatsCards() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
   const [collectionStats, itemStats] = await Promise.all([
-    getCollectionStats(),
+    userId ? getCollectionStats(userId) : Promise.resolve({ total: 0, favorites: 0 }),
     getItemStats(),
   ]);
 

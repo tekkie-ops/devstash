@@ -1,12 +1,18 @@
 import Link from "next/link";
 
 import { CollectionCard } from "@/components/dashboard/CollectionCard";
+import { auth } from "@/auth";
 import { getRecentCollections } from "@/lib/db/collections";
 
 const RECENT_COLLECTION_LIMIT = 6;
 
 export async function RecentCollections() {
-  const recentCollections = await getRecentCollections(RECENT_COLLECTION_LIMIT);
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  const recentCollections = userId
+    ? await getRecentCollections(userId, RECENT_COLLECTION_LIMIT)
+    : [];
 
   return (
     <section className="flex flex-col gap-4">
