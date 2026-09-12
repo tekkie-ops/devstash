@@ -1,16 +1,35 @@
-# Current Feature
+# Current Feature: Favorites Page Sorting
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add client-side sorting controls to `/favorites` (`src/app/favorites/page.tsx`)
+- Support sorting by: **Name** (alphabetical), **Date** (most recently updated), and **Item Type**
+- Sorting happens in the browser (no new server query/params) — the page already fetches
+  everything up front via `FAVORITES_LIMIT`, so re-sorting is just re-ordering already-loaded data
+- Applies to the Items section (`FavoriteItemRow` list), which has both a type and a date to sort by
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- The Items section and Collections section are currently separate server-rendered lists
+  (`items.map(...)` / `collections.map(...)` directly in `page.tsx`) — introducing client-side
+  sorting means at least the Items list (and its container) needs to become a client component,
+  or wrap the list in a small client sub-component that owns sort state.
+- Collections have no "item type" concept (every row shows a generic "Collection" badge), so
+  "sort by item type" only meaningfully applies to the Items section. Decide during `start`
+  whether Collections also gets Name/Date sorting for consistency, or is left as-is (currently
+  sorted by `updatedAt` desc server-side, per the Favorites Page feature's history note).
+- Existing sort is implicit: both lists come back from `getFavoriteItems`/`getFavoriteCollections`
+  ordered by `updatedAt` desc (used as a "favorited-at" proxy, no real `favoritedAt` column exists).
+  Date sort should probably default to this existing order.
+- `ItemSummary.type` (from `src/lib/db/items.ts`) carries `{ id, name, label, color, icon }` — sorting
+  by type likely means grouping/ordering by `type.label` alphabetically, or by the existing
+  `SYSTEM_TYPE_ORDER` from `src/lib/item-types.ts` — decide which reads more naturally during `start`.
+- No new server actions or DB queries expected — this is UI/display-layer only, consistent with
+  this project's convention that component-level sorting logic isn't unit-tested.
 
 ## History
 
