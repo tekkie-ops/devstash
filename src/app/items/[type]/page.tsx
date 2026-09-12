@@ -7,18 +7,23 @@ import { FileListRow } from "@/components/items/FileListRow";
 import { ImageThumbnailCard } from "@/components/items/ImageThumbnailCard";
 import { ItemCard } from "@/components/items/ItemCard";
 import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import { getCollectionsForSelect } from "@/lib/db/collections";
 import { getItemsByTypeSlug } from "@/lib/db/items";
+import { getTotalPages, ITEMS_PER_PAGE, parsePage } from "@/lib/pagination";
 
 export default async function ItemsByTypePage({
   params,
+  searchParams,
 }: PageProps<"/items/[type]">) {
   const { type: slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = parsePage(pageParam);
   const session = await auth();
   const userId = session?.user?.id;
 
   const [result, availableCollections] = await Promise.all([
-    getItemsByTypeSlug(slug),
+    getItemsByTypeSlug(slug, page),
     userId ? getCollectionsForSelect(userId) : Promise.resolve([]),
   ]);
 
@@ -26,7 +31,13 @@ export default async function ItemsByTypePage({
     notFound();
   }
 
-  const { type, items } = result;
+  const { type, items, totalCount } = result;
+  const totalPages = getTotalPages(totalCount, ITEMS_PER_PAGE);
+
+  if (totalCount > 0 && page > totalPages) {
+    notFound();
+  }
+
   const isImageType = type.name === "image";
   const isFileType = type.name === "file";
 
@@ -38,7 +49,7 @@ export default async function ItemsByTypePage({
           {type.label}
         </h1>
         <p className="text-muted-foreground">
-          {items.length} {items.length === 1 ? "item" : "items"}
+          {totalCount} {totalCount === 1 ? "item" : "items"}
         </p>
       </header>
 
@@ -67,6 +78,12 @@ export default async function ItemsByTypePage({
           No {type.label.toLowerCase()} yet.
         </p>
       )}
+
+      <PaginationControls
+        currentPage={page}
+        totalPages={totalPages}
+        basePath={`/items/${slug}`}
+      />
 
       <Link
         href="/dashboard"

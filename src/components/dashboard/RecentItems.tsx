@@ -2,11 +2,10 @@ import { Clock } from "lucide-react";
 
 import { ItemRow } from "@/components/dashboard/ItemRow";
 import { getRecentItems } from "@/lib/db/items";
-
-const RECENT_ITEM_LIMIT = 10;
+import { DASHBOARD_RECENT_ITEMS_LIMIT } from "@/lib/pagination";
 
 export async function RecentItems() {
-  const recentItems = await getRecentItems(RECENT_ITEM_LIMIT);
+  const recentItems = await getRecentItems(DASHBOARD_RECENT_ITEMS_LIMIT);
 
   return (
     <section className="flex flex-col gap-4">

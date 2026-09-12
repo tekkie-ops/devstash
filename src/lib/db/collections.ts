@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { toLabel } from "@/lib/item-types";
+import { COLLECTIONS_PER_PAGE, getSkip } from "@/lib/pagination";
 import type {
   CreateCollectionInput,
   UpdateCollectionInput,
@@ -100,9 +101,6 @@ const COLLECTION_ITEMS_INCLUDE = {
 /** Cap on the sidebar's Favorites group — it has no pagination to fall back on. */
 const FAVORITE_COLLECTIONS_LIMIT = 12;
 
-/** Safety cap on the /collections list page — it has no pagination to fall back on. */
-const ALL_COLLECTIONS_LIMIT = 100;
-
 export async function getRecentCollections(
   userId: string,
   limit: number,
@@ -155,18 +153,27 @@ export async function getCollectionsForSelect(
   });
 }
 
-/** All of a user's collections, newest-updated first, for the /collections list page. */
+/**
+ * A user's collections, newest-updated first, for the /collections list page —
+ * one `COLLECTIONS_PER_PAGE` page at a time.
+ */
 export async function getAllCollections(
   userId: string,
-): Promise<CollectionSummary[]> {
-  const collections = await prisma.collection.findMany({
-    where: { userId },
-    orderBy: { updatedAt: "desc" },
-    take: ALL_COLLECTIONS_LIMIT,
-    include: COLLECTION_ITEMS_INCLUDE,
-  });
+  page: number,
+): Promise<{ collections: CollectionSummary[]; totalCount: number }> {
+  const where = { userId };
+  const [collections, totalCount] = await Promise.all([
+    prisma.collection.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: getSkip(page, COLLECTIONS_PER_PAGE),
+      take: COLLECTIONS_PER_PAGE,
+      include: COLLECTION_ITEMS_INCLUDE,
+    }),
+    prisma.collection.count({ where }),
+  ]);
 
-  return collections.map(toCollectionSummary);
+  return { collections: collections.map(toCollectionSummary), totalCount };
 }
 
 /**

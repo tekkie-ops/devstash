@@ -3,15 +3,14 @@ import Link from "next/link";
 import { CollectionCard } from "@/components/dashboard/CollectionCard";
 import { auth } from "@/auth";
 import { getRecentCollections } from "@/lib/db/collections";
-
-const RECENT_COLLECTION_LIMIT = 6;
+import { DASHBOARD_COLLECTIONS_LIMIT } from "@/lib/pagination";
 
 export async function RecentCollections() {
   const session = await auth();
   const userId = session?.user?.id;
 
   const recentCollections = userId
-    ? await getRecentCollections(userId, RECENT_COLLECTION_LIMIT)
+    ? await getRecentCollections(userId, DASHBOARD_COLLECTIONS_LIMIT)
     : [];
 
   return (

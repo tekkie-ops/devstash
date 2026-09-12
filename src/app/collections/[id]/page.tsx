@@ -5,16 +5,21 @@ import { auth } from "@/auth";
 import { CollectionDetailActions } from "@/components/collections/CollectionDetailActions";
 import { ItemCard } from "@/components/items/ItemCard";
 import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import {
   getCollectionDetail,
   getCollectionsForSelect,
 } from "@/lib/db/collections";
 import { getItemsByCollectionId } from "@/lib/db/items";
+import { getTotalPages, ITEMS_PER_PAGE, parsePage } from "@/lib/pagination";
 
 export default async function CollectionDetailPage({
   params,
+  searchParams,
 }: PageProps<"/collections/[id]">) {
   const { id } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = parsePage(pageParam);
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -28,8 +33,14 @@ export default async function CollectionDetailPage({
     notFound();
   }
 
+  const totalPages = getTotalPages(collection.itemCount, ITEMS_PER_PAGE);
+
+  if (collection.itemCount > 0 && page > totalPages) {
+    notFound();
+  }
+
   const [items, availableCollections] = await Promise.all([
-    getItemsByCollectionId(userId, id),
+    getItemsByCollectionId(userId, id, page),
     getCollectionsForSelect(userId),
   ]);
 
@@ -46,7 +57,7 @@ export default async function CollectionDetailPage({
           <p className="text-muted-foreground">{collection.description}</p>
         )}
         <p className="text-sm text-muted-foreground">
-          {items.length} {items.length === 1 ? "item" : "items"}
+          {collection.itemCount} {collection.itemCount === 1 ? "item" : "items"}
         </p>
       </header>
 
@@ -63,6 +74,12 @@ export default async function CollectionDetailPage({
           No items in this collection yet.
         </p>
       )}
+
+      <PaginationControls
+        currentPage={page}
+        totalPages={totalPages}
+        basePath={`/collections/${id}`}
+      />
 
       <Link
         href="/collections"
