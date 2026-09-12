@@ -8,12 +8,16 @@ import { toast } from "sonner";
 import type { BeforeMount, OnChange, OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
+import { useEditorPreferences } from "@/components/settings/EditorPreferencesContext";
+import type { EditorPreferences } from "@/lib/validations/editor-preferences";
+
 /**
  * Monaco Editor, loaded on the client only. Used for code-bearing item types
  * (snippets, commands) in place of a plain <Textarea>. Renders a macOS-style
  * window header with the language label and a quick copy button, and grows with
  * its content up to a fixed max height, past which Monaco's own themed
- * scrollbar takes over.
+ * scrollbar takes over. Font size, tab size, word wrap, minimap, and theme all
+ * come from the signed-in user's EditorPreferencesContext (see /settings).
  *
  * The `monaco-editor` runtime is fetched from a CDN by `@monaco-editor/react`'s
  * default loader — worth revisiting if the app ever needs to run offline.
@@ -25,7 +29,91 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 
 const MIN_HEIGHT = 96;
 const MAX_HEIGHT = 400;
-const THEME_NAME = "devstash-dark";
+
+/** Maps an EditorPreferences theme id to the Monaco theme name defined in defineThemes. */
+const MONACO_THEME_NAMES: Record<EditorPreferences["theme"], string> = {
+  "vs-dark": "devstash-vs-dark",
+  monokai: "devstash-monokai",
+  "github-dark": "devstash-github-dark",
+};
+
+function defineThemes(monaco: Parameters<BeforeMount>[0]) {
+  monaco.editor.defineTheme(MONACO_THEME_NAMES["vs-dark"], {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#0d0d0d",
+      "editorGutter.background": "#0d0d0d",
+      "editorLineNumber.foreground": "#4b4b4b",
+      "editorLineNumber.activeForeground": "#a1a1a1",
+      "editor.lineHighlightBackground": "#ffffff0a",
+      "editor.lineHighlightBorder": "#00000000",
+      "editorWidget.background": "#1a1a1a",
+      "editorIndentGuide.background1": "#ffffff14",
+      "scrollbar.shadow": "#00000000",
+      "scrollbarSlider.background": "#ffffff1f",
+      "scrollbarSlider.hoverBackground": "#ffffff33",
+      "scrollbarSlider.activeBackground": "#ffffff4d",
+    },
+  });
+
+  monaco.editor.defineTheme(MONACO_THEME_NAMES.monokai, {
+    base: "vs-dark",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "75715e" },
+      { token: "string", foreground: "e6db74" },
+      { token: "keyword", foreground: "f92672" },
+      { token: "number", foreground: "ae81ff" },
+      { token: "type", foreground: "66d9ef", fontStyle: "italic" },
+      { token: "function", foreground: "a6e22e" },
+      { token: "variable", foreground: "f8f8f2" },
+    ],
+    colors: {
+      "editor.background": "#272822",
+      "editorGutter.background": "#272822",
+      "editorLineNumber.foreground": "#75715e",
+      "editorLineNumber.activeForeground": "#f8f8f2",
+      "editor.lineHighlightBackground": "#3e3d32",
+      "editor.lineHighlightBorder": "#00000000",
+      "editorWidget.background": "#3e3d32",
+      "editorIndentGuide.background1": "#ffffff14",
+      "scrollbar.shadow": "#00000000",
+      "scrollbarSlider.background": "#ffffff1f",
+      "scrollbarSlider.hoverBackground": "#ffffff33",
+      "scrollbarSlider.activeBackground": "#ffffff4d",
+    },
+  });
+
+  monaco.editor.defineTheme(MONACO_THEME_NAMES["github-dark"], {
+    base: "vs-dark",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "8b949e" },
+      { token: "string", foreground: "a5d6ff" },
+      { token: "keyword", foreground: "ff7b72" },
+      { token: "number", foreground: "79c0ff" },
+      { token: "type", foreground: "ffa657" },
+      { token: "function", foreground: "d2a8ff" },
+      { token: "variable", foreground: "c9d1d9" },
+    ],
+    colors: {
+      "editor.background": "#0d1117",
+      "editorGutter.background": "#0d1117",
+      "editorLineNumber.foreground": "#6e7681",
+      "editorLineNumber.activeForeground": "#c9d1d9",
+      "editor.lineHighlightBackground": "#161b22",
+      "editor.lineHighlightBorder": "#00000000",
+      "editorWidget.background": "#161b22",
+      "editorIndentGuide.background1": "#ffffff14",
+      "scrollbar.shadow": "#00000000",
+      "scrollbarSlider.background": "#ffffff1f",
+      "scrollbarSlider.hoverBackground": "#ffffff33",
+      "scrollbarSlider.activeBackground": "#ffffff4d",
+    },
+  });
+}
 
 /** Common shorthands → Monaco language ids. Unknown ids fall back to plaintext. */
 const LANGUAGE_ALIASES: Record<string, string> = {
@@ -66,6 +154,7 @@ export function CodeEditor({
   onChange,
   readOnly = false,
 }: CodeEditorProps) {
+  const { preferences } = useEditorPreferences();
   const [height, setHeight] = useState(MIN_HEIGHT);
 
   const displayLanguage = language?.trim() || null;
@@ -88,25 +177,7 @@ export function CodeEditor({
   );
 
   const handleBeforeMount = useCallback<BeforeMount>((monaco) => {
-    monaco.editor.defineTheme(THEME_NAME, {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {
-        "editor.background": "#0d0d0d",
-        "editorGutter.background": "#0d0d0d",
-        "editorLineNumber.foreground": "#4b4b4b",
-        "editorLineNumber.activeForeground": "#a1a1a1",
-        "editor.lineHighlightBackground": "#ffffff0a",
-        "editor.lineHighlightBorder": "#00000000",
-        "editorWidget.background": "#1a1a1a",
-        "editorIndentGuide.background1": "#ffffff14",
-        "scrollbar.shadow": "#00000000",
-        "scrollbarSlider.background": "#ffffff1f",
-        "scrollbarSlider.hoverBackground": "#ffffff33",
-        "scrollbarSlider.activeBackground": "#ffffff4d",
-      },
-    });
+    defineThemes(monaco);
   }, []);
 
   const handleMount = useCallback<OnMount>((editorInstance) => {
@@ -125,10 +196,10 @@ export function CodeEditor({
     () => ({
       readOnly,
       domReadOnly: readOnly,
-      minimap: { enabled: false },
+      minimap: { enabled: preferences.minimap },
       scrollBeyondLastLine: false,
-      fontSize: 13,
-      lineHeight: 20,
+      fontSize: preferences.fontSize,
+      lineHeight: Math.round(preferences.fontSize * 1.5),
       fontFamily: "var(--font-mono)",
       padding: { top: 12, bottom: 12 },
       renderLineHighlight: readOnly ? "none" : "line",
@@ -141,10 +212,10 @@ export function CodeEditor({
         alwaysConsumeMouseWheel: false,
       },
       automaticLayout: true,
-      tabSize: 2,
-      wordWrap: "off",
+      tabSize: preferences.tabSize,
+      wordWrap: preferences.wordWrap ? "on" : "off",
     }),
-    [readOnly],
+    [readOnly, preferences.minimap, preferences.fontSize, preferences.tabSize, preferences.wordWrap],
   );
 
   return (
@@ -174,7 +245,7 @@ export function CodeEditor({
 
       <MonacoEditor
         height={height}
-        theme={THEME_NAME}
+        theme={MONACO_THEME_NAMES[preferences.theme]}
         language={monacoLanguage}
         value={value}
         onChange={readOnly ? undefined : handleChange}

@@ -21,6 +21,8 @@ model User {
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
 
+  editorPreferences    Json?
+
   accounts             Account[]
   sessions             Session[]
 
