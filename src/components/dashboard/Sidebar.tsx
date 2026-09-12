@@ -24,6 +24,9 @@ import { getItemTypesWithCounts } from "@/lib/db/items";
 
 const RECENT_COLLECTION_LIMIT = 5;
 
+/** Cap on the sidebar's Favorites group — it has no pagination to fall back on. */
+const FAVORITE_COLLECTION_LIMIT = 12;
+
 export async function Sidebar() {
   const session = await auth();
   const userId = session?.user?.id;
@@ -31,7 +34,7 @@ export async function Sidebar() {
   const [itemTypes, favoriteCollections, recentCollections] = userId
     ? await Promise.all([
         getItemTypesWithCounts(),
-        getFavoriteCollections(userId),
+        getFavoriteCollections(userId, FAVORITE_COLLECTION_LIMIT),
         getRecentNonFavoriteCollections(userId, RECENT_COLLECTION_LIMIT),
       ])
     : [await getItemTypesWithCounts(), [], []];

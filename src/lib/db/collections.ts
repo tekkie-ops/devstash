@@ -98,9 +98,6 @@ const COLLECTION_ITEMS_INCLUDE = {
   },
 } as const;
 
-/** Cap on the sidebar's Favorites group — it has no pagination to fall back on. */
-const FAVORITE_COLLECTIONS_LIMIT = 12;
-
 export async function getRecentCollections(
   userId: string,
   limit: number,
@@ -115,13 +112,20 @@ export async function getRecentCollections(
   return collections.map(toCollectionSummary);
 }
 
+/**
+ * A user's favorited collections, most-recently-favorited first (updatedAt is
+ * used as the favorited-at proxy, same convention as `getFavoriteItems`).
+ * Takes an explicit `limit` since callers need different caps — the sidebar's
+ * small Favorites group vs. the /favorites page's full listing.
+ */
 export async function getFavoriteCollections(
   userId: string,
+  limit: number,
 ): Promise<CollectionSummary[]> {
   const collections = await prisma.collection.findMany({
     where: { userId, isFavorite: true },
     orderBy: { updatedAt: "desc" },
-    take: FAVORITE_COLLECTIONS_LIMIT,
+    take: limit,
     include: COLLECTION_ITEMS_INCLUDE,
   });
 
