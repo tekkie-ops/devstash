@@ -97,6 +97,9 @@ const COLLECTION_ITEMS_INCLUDE = {
 /** Cap on the sidebar's Favorites group — it has no pagination to fall back on. */
 const FAVORITE_COLLECTIONS_LIMIT = 12;
 
+/** Safety cap on the /collections list page — it has no pagination to fall back on. */
+const ALL_COLLECTIONS_LIMIT = 100;
+
 export async function getRecentCollections(
   userId: string,
   limit: number,
@@ -147,6 +150,40 @@ export async function getCollectionsForSelect(
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+}
+
+/** All of a user's collections, newest-updated first, for the /collections list page. */
+export async function getAllCollections(
+  userId: string,
+): Promise<CollectionSummary[]> {
+  const collections = await prisma.collection.findMany({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    take: ALL_COLLECTIONS_LIMIT,
+    include: COLLECTION_ITEMS_INCLUDE,
+  });
+
+  return collections.map(toCollectionSummary);
+}
+
+/**
+ * A single collection's summary for the /collections/[id] detail page, scoped
+ * to its owner. Returns null when the id matches nothing `userId` owns.
+ */
+export async function getCollectionDetail(
+  userId: string,
+  id: string,
+): Promise<CollectionSummary | null> {
+  const collection = await prisma.collection.findFirst({
+    where: { id, userId },
+    include: COLLECTION_ITEMS_INCLUDE,
+  });
+
+  if (!collection) {
+    return null;
+  }
+
+  return toCollectionSummary(collection);
 }
 
 export async function getCollectionStats(userId: string): Promise<{

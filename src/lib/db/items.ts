@@ -172,6 +172,33 @@ export async function getItemsByTypeSlug(slug: string): Promise<{
   };
 }
 
+/** Safety cap on the /collections/[id] detail page — it has no pagination to fall back on. */
+const COLLECTION_DETAIL_ITEMS_LIMIT = 100;
+
+/**
+ * Items belonging to a collection, scoped to `userId` so a caller can't read
+ * another user's items by guessing a collection id — the same "userId is the
+ * security boundary" approach used throughout this file. Pair with
+ * `getCollectionDetail` (which itself owner-checks the collection) to 404 an
+ * unknown/not-owned collection rather than silently returning an empty list.
+ */
+export async function getItemsByCollectionId(
+  userId: string,
+  collectionId: string,
+): Promise<ItemSummary[]> {
+  const items = await prisma.item.findMany({
+    where: { userId, collections: { some: { collectionId } } },
+    orderBy: { updatedAt: "desc" },
+    take: COLLECTION_DETAIL_ITEMS_LIMIT,
+    include: {
+      itemType: true,
+      tags: { include: { tag: true } },
+    },
+  });
+
+  return items.map(toItemSummary);
+}
+
 /**
  * The system item types offered in the New Item dialog, in a fixed order.
  * Not user-scoped — system types are shared.

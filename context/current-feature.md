@@ -1,14 +1,23 @@
-# Current Feature
+# Current Feature: Collections Pages
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Create `/collections` page listing all of the signed-in user's collections (using the existing `CollectionCard`).
+- Create `/collections/[id]` page showing the items belonging to that collection (reuse the existing item cards — `ItemCard`/`ItemRow` as appropriate).
+- Link the sidebar's "View all collections" to `/collections` (currently a dead link).
+- Make every collection card link to its `/collections/[id]` page (currently `CollectionCard` already links there per its original spec — verify/wire if not already true).
 
 ## Notes
+
+- Existing building blocks to reuse: `src/components/dashboard/CollectionCard.tsx`, `src/lib/db/collections.ts` (`getRecentCollections`, `getFavoriteCollections`, `getCollectionStats`, `getCollectionsForSelect`, `toCollectionSummary`), `src/lib/db/items.ts` for fetching items in a collection (no existing "items by collection" query — will likely need a new one, e.g. `getItemsByCollectionId`).
+- Follow the standalone-page pattern used by `/profile` and `/items/[type]` (no dashboard sidebar shell needed necessarily, or reuse dashboard layout — check existing routes for the closest precedent).
+- Auth: scope queries to the signed-in user via `auth()` + `session.user.id`, per the pattern established in the Sept 11 "Fix Item Authorization" and Collection Create features — do not fall back to the demo-user hardcoding.
+- `/collections/[id]` should 404 (via `notFound()`) for an unknown or not-owned collection id, mirroring `/items/[type]`'s unknown-slug handling.
+- Out of scope unless requested: creating/editing/deleting collections from these pages (Collection Create's dialog already handles creation elsewhere), removing items from a collection.
 
 
 ## History
