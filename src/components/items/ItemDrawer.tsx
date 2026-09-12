@@ -2,28 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Download, Pencil, Pin, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { deleteItem, updateItem } from "@/actions/items";
+import { updateItem } from "@/actions/items";
 import { ItemTypeTile } from "@/components/dashboard/ItemTypeIcon";
-import { CodeEditor } from "@/components/items/CodeEditor";
-import { Field } from "@/components/items/ItemFormField";
-import { MarkdownEditor } from "@/components/items/MarkdownEditor";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { EditForm } from "@/components/items/ItemDrawerEditForm";
+import { ItemDrawerBody } from "@/components/items/ItemDrawerView";
+import { ViewActionBar } from "@/components/items/ItemDrawerActionBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -32,8 +19,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { formatLongDate } from "@/lib/dashboard";
 import type { ItemDetail } from "@/lib/db/items";
 import {
   CODE_TYPES,
@@ -41,8 +26,6 @@ import {
   LANGUAGE_TYPES,
   MARKDOWN_TYPES,
 } from "@/lib/item-types";
-import { formatFileSize } from "@/lib/upload";
-import { cn } from "@/lib/utils";
 
 interface ItemDrawerProps {
   open: boolean;
@@ -226,389 +209,29 @@ function ItemDrawerContent({
         {mode === "view" ? (
           <ItemDrawerBody detail={detail} />
         ) : (
-          <div className="flex flex-col gap-6">
-            <Field label="Title" htmlFor="item-title">
-              <Input
-                id="item-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-              />
-            </Field>
-
-            <Field label="Description" htmlFor="item-description">
-              <Textarea
-                id="item-description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                rows={3}
-              />
-            </Field>
-
-            {showContent &&
-              (showCode ? (
-                <Field label="Content">
-                  <CodeEditor
-                    value={content}
-                    language={language}
-                    onChange={setContent}
-                  />
-                </Field>
-              ) : showMarkdown ? (
-                <Field label="Content">
-                  <MarkdownEditor value={content} onChange={setContent} />
-                </Field>
-              ) : (
-                <Field label="Content" htmlFor="item-content">
-                  <Textarea
-                    id="item-content"
-                    value={content}
-                    onChange={(event) => setContent(event.target.value)}
-                    rows={8}
-                    className="font-mono text-xs"
-                  />
-                </Field>
-              ))}
-
-            {showLanguage && (
-              <Field label="Language" htmlFor="item-language">
-                <Input
-                  id="item-language"
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value)}
-                  placeholder="e.g. typescript"
-                />
-              </Field>
-            )}
-
-            {showUrl && (
-              <Field label="URL" htmlFor="item-url">
-                <Input
-                  id="item-url"
-                  type="url"
-                  value={url}
-                  onChange={(event) => setUrl(event.target.value)}
-                  placeholder="https://…"
-                />
-              </Field>
-            )}
-
-            <Field label="Tags" htmlFor="item-tags">
-              <Input
-                id="item-tags"
-                value={tagsInput}
-                onChange={(event) => setTagsInput(event.target.value)}
-                placeholder="comma, separated, tags"
-              />
-              <p className="text-xs text-muted-foreground">
-                Separate tags with commas.
-              </p>
-            </Field>
-
-            <ReadOnlyMeta detail={detail} />
-          </div>
+          <EditForm
+            detail={detail}
+            title={title}
+            onTitleChange={setTitle}
+            description={description}
+            onDescriptionChange={setDescription}
+            content={content}
+            onContentChange={setContent}
+            language={language}
+            onLanguageChange={setLanguage}
+            url={url}
+            onUrlChange={setUrl}
+            tagsInput={tagsInput}
+            onTagsInputChange={setTagsInput}
+            showContent={showContent}
+            showCode={showCode}
+            showMarkdown={showMarkdown}
+            showLanguage={showLanguage}
+            showUrl={showUrl}
+          />
         )}
       </div>
     </>
-  );
-}
-
-/** Type / collections / dates — shown in edit mode but not editable. */
-function ReadOnlyMeta({ detail }: { detail: ItemDetail }) {
-  return (
-    <div className="flex flex-col gap-6 border-t pt-6">
-      {detail.collections.length > 0 && (
-        <Section title="Collections">
-          <div className="flex flex-wrap gap-1.5">
-            {detail.collections.map((collection) => (
-              <Badge key={collection.id} variant="outline">
-                {collection.name}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      <Section title="Details">
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Created</dt>
-            <dd>{formatLongDate(detail.createdAt)}</dd>
-          </div>
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Updated</dt>
-            <dd>{formatLongDate(detail.updatedAt)}</dd>
-          </div>
-        </dl>
-      </Section>
-    </div>
-  );
-}
-
-/**
- * The favorite/pin/copy/edit/delete row. Favorite reflects the item's state
- * (amber when active); Favorite/Pin mutations land in a later feature — Copy,
- * Edit and Delete are wired up.
- */
-function ViewActionBar({
-  detail,
-  onEdit,
-  onDeleted,
-}: {
-  detail: ItemDetail;
-  onEdit: () => void;
-  onDeleted: () => void;
-}) {
-  const router = useRouter();
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  function handleCopy() {
-    const text = detail.content ?? detail.url ?? "";
-    if (!text) {
-      toast.error("Nothing to copy");
-      return;
-    }
-    void navigator.clipboard
-      .writeText(text)
-      .then(() => toast.success("Copied to clipboard"))
-      .catch(() => toast.error("Couldn't copy to clipboard"));
-  }
-
-  async function handleDelete() {
-    setDeleting(true);
-    const result = await deleteItem(detail.id);
-    setDeleting(false);
-
-    if (!result.success) {
-      toast.error(result.error);
-      return;
-    }
-
-    setConfirmOpen(false);
-    onDeleted();
-    toast.success("Item deleted");
-    router.refresh();
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      <Button type="button" variant="ghost" size="sm">
-        <Star
-          className={cn(
-            "size-4",
-            detail.isFavorite && "fill-amber-400 text-amber-400",
-          )}
-        />
-        Favorite
-      </Button>
-      <Button type="button" variant="ghost" size="sm">
-        <Pin
-          className={cn("size-4", detail.isPinned && "text-foreground")}
-        />
-        Pin
-      </Button>
-      <Button type="button" variant="ghost" size="sm" onClick={handleCopy}>
-        <Copy className="size-4" />
-        Copy
-      </Button>
-
-      <div className="ml-auto flex items-center gap-1">
-        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
-          <Pencil className="size-4" />
-          Edit
-        </Button>
-        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Delete"
-            >
-              <Trash2 className="size-4 text-destructive" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this item?</AlertDialogTitle>
-              <AlertDialogDescription>
-                &ldquo;{detail.title}&rdquo; will be permanently deleted. This
-                cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                disabled={deleting}
-                onClick={(event) => {
-                  event.preventDefault();
-                  void handleDelete();
-                }}
-              >
-                {deleting ? "Deleting…" : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
-  );
-}
-
-function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
-  return (
-    <div className="flex flex-col gap-6">
-      {detail.description && (
-        <Section title="Description">
-          <p className="text-sm text-foreground">{detail.description}</p>
-        </Section>
-      )}
-
-      <ContentSection detail={detail} />
-
-      {detail.tags.length > 0 && (
-        <Section title="Tags">
-          <div className="flex flex-wrap gap-1.5">
-            {detail.tags.map((tag) => (
-              <Badge key={tag} variant="secondary">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {detail.collections.length > 0 && (
-        <Section title="Collections">
-          <div className="flex flex-wrap gap-1.5">
-            {detail.collections.map((collection) => (
-              <Badge key={collection.id} variant="outline">
-                {collection.name}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      <Section title="Details">
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Created</dt>
-            <dd>{formatLongDate(detail.createdAt)}</dd>
-          </div>
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Updated</dt>
-            <dd>{formatLongDate(detail.updatedAt)}</dd>
-          </div>
-        </dl>
-      </Section>
-    </div>
-  );
-}
-
-function ContentSection({ detail }: { detail: ItemDetail }) {
-  if (detail.contentType === "file") {
-    return <FileSection detail={detail} />;
-  }
-
-  if (detail.url && !detail.content) {
-    return (
-      <Section title="URL">
-        <a
-          href={detail.url}
-          target="_blank"
-          rel="noreferrer"
-          className="text-sm break-all text-primary underline-offset-4 hover:underline"
-        >
-          {detail.url}
-        </a>
-      </Section>
-    );
-  }
-
-  if (detail.content) {
-    return (
-      <Section title="Content">
-        {CODE_TYPES.includes(detail.type.name) ? (
-          <CodeEditor
-            value={detail.content}
-            language={detail.language}
-            readOnly
-          />
-        ) : MARKDOWN_TYPES.includes(detail.type.name) ? (
-          <MarkdownEditor value={detail.content} readOnly />
-        ) : (
-          <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
-            {detail.content}
-          </pre>
-        )}
-      </Section>
-    );
-  }
-
-  return null;
-}
-
-/**
- * File / image items: an inline preview for images, a filename + size card
- * otherwise, and a Download button that goes through the same-origin proxy
- * route (`/api/items/[id]/download`) so it works without R2 CORS config.
- */
-function FileSection({ detail }: { detail: ItemDetail }) {
-  const isImage = detail.type.name === "image";
-  const downloadHref = `/api/items/${detail.id}/download`;
-
-  return (
-    <Section title={isImage ? "Image" : "File"}>
-      {isImage && detail.fileUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={detail.fileUrl}
-          alt={detail.fileName ?? "Image preview"}
-          className="max-h-72 w-full rounded-lg border object-contain"
-        />
-      )}
-
-      <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-medium">
-            {detail.fileName ?? "Unnamed file"}
-          </span>
-          {detail.fileSize != null && (
-            <span className="text-xs text-muted-foreground">
-              {formatFileSize(detail.fileSize)}
-            </span>
-          )}
-        </div>
-        {detail.fileUrl && (
-          <Button asChild variant="outline" size="sm">
-            <a href={downloadHref} download>
-              <Download className="size-4" />
-              Download
-            </a>
-          </Button>
-        )}
-      </div>
-    </Section>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {title}
-      </h3>
-      {children}
-    </section>
   );
 }
 

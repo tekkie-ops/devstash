@@ -8,11 +8,10 @@ import {
   FileJson,
   FileSpreadsheet,
   FileText,
-  Pin,
-  Star,
 } from "lucide-react";
 
 import { useItemDrawer } from "@/components/items/ItemDrawerProvider";
+import { ItemStatusIcons } from "@/components/items/ItemStatusIcons";
 import { Button } from "@/components/ui/button";
 import { formatItemDate } from "@/lib/dashboard";
 import type { ItemSummary } from "@/lib/db/items";
@@ -73,18 +72,10 @@ export function FileListRow({ item }: { item: ItemSummary }) {
           <span className="truncate font-medium">
             {item.fileName ?? item.title}
           </span>
-          {item.isPinned && (
-            <Pin
-              aria-label="Pinned"
-              className="size-3.5 shrink-0 text-muted-foreground"
-            />
-          )}
-          {item.isFavorite && (
-            <Star
-              aria-label="Favorite"
-              className="size-3.5 shrink-0 fill-amber-400 text-amber-400"
-            />
-          )}
+          <ItemStatusIcons
+            isPinned={item.isPinned}
+            isFavorite={item.isFavorite}
+          />
         </div>
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground sm:shrink-0">

@@ -1,6 +1,4 @@
-import { resend } from "@/lib/resend";
-
-const FROM_ADDRESS = "DevStash <onboarding@resend.dev>";
+import { FROM_ADDRESS, resend } from "@/lib/resend";
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   await resend.emails.send({
