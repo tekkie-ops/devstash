@@ -42,6 +42,8 @@ interface ItemDrawerProps {
   onDeleted: () => void;
   /** Called with the refreshed detail after a successful favorite toggle. */
   onFavorited: (detail: ItemDetail) => void;
+  /** Called with the (optimistically or server) refreshed detail after a pin toggle. */
+  onPinned: (detail: ItemDetail) => void;
 }
 
 export function ItemDrawer({
@@ -54,6 +56,7 @@ export function ItemDrawer({
   onSaved,
   onDeleted,
   onFavorited,
+  onPinned,
 }: ItemDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -78,6 +81,7 @@ export function ItemDrawer({
             onSaved={onSaved}
             onDeleted={onDeleted}
             onFavorited={onFavorited}
+            onPinned={onPinned}
           />
         )}
       </SheetContent>
@@ -96,12 +100,14 @@ function ItemDrawerContent({
   onSaved,
   onDeleted,
   onFavorited,
+  onPinned,
 }: {
   detail: ItemDetail;
   availableCollections: CollectionOption[];
   onSaved: (detail: ItemDetail) => void;
   onDeleted: () => void;
   onFavorited: (detail: ItemDetail) => void;
+  onPinned: (detail: ItemDetail) => void;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "edit">("view");
@@ -196,6 +202,7 @@ function ItemDrawerContent({
             onEdit={startEditing}
             onDeleted={onDeleted}
             onFavorited={onFavorited}
+            onPinned={onPinned}
           />
         ) : (
           <div className="flex items-center gap-2">

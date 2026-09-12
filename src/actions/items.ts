@@ -5,6 +5,7 @@ import {
   createItem as createItemRecord,
   deleteItem as deleteItemRecord,
   toggleItemFavorite as toggleItemFavoriteRecord,
+  toggleItemPin as toggleItemPinRecord,
   updateItem as updateItemRecord,
 } from "@/lib/db/items";
 import type { ItemDetail } from "@/lib/db/items";
@@ -129,6 +130,32 @@ export async function toggleItemFavorite(
     return { success: true, data: updated };
   } catch (error) {
     console.error("toggleItemFavorite failed:", error);
+    return { success: false, error: "Something went wrong. Please try again." };
+  }
+}
+
+/**
+ * Flips an item's pinned state from the drawer's action bar, scoped to items
+ * the signed-in user owns.
+ */
+export async function toggleItemPin(itemId: string): Promise<UpdateItemResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "You must be signed in to do that" };
+  }
+
+  if (typeof itemId !== "string" || itemId.trim() === "") {
+    return { success: false, error: "Invalid item" };
+  }
+
+  try {
+    const updated = await toggleItemPinRecord(session.user.id, itemId);
+    if (!updated) {
+      return { success: false, error: "Item not found" };
+    }
+    return { success: true, data: updated };
+  } catch (error) {
+    console.error("toggleItemPin failed:", error);
     return { success: false, error: "Something went wrong. Please try again." };
   }
 }

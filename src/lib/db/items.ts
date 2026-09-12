@@ -110,7 +110,7 @@ export async function getRecentItems(limit: number): Promise<ItemSummary[]> {
 
   const items = await prisma.item.findMany({
     where: { userId },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
     take: limit,
     include: {
       itemType: true,
@@ -157,7 +157,7 @@ export async function getItemsByTypeSlug(
   const [items, totalCount] = await Promise.all([
     prisma.item.findMany({
       where,
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
       skip: getSkip(page, ITEMS_PER_PAGE),
       take: ITEMS_PER_PAGE,
       include: {
@@ -197,7 +197,7 @@ export async function getItemsByCollectionId(
 ): Promise<ItemSummary[]> {
   const items = await prisma.item.findMany({
     where: { userId, collections: { some: { collectionId } } },
-    orderBy: { updatedAt: "desc" },
+    orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
     skip: getSkip(page, ITEMS_PER_PAGE),
     take: ITEMS_PER_PAGE,
     include: {
@@ -422,6 +422,32 @@ export async function toggleItemFavorite(
   await prisma.item.update({
     where: { id },
     data: { isFavorite: !existing.isFavorite },
+  });
+
+  return getItemDetail(userId, id);
+}
+
+/**
+ * Flips isPinned on an item, scoped to its owner. Returns the refreshed
+ * ItemDetail so callers (the drawer) can update without a second fetch;
+ * returns null when the id matches nothing userId owns.
+ */
+export async function toggleItemPin(
+  userId: string,
+  id: string,
+): Promise<ItemDetail | null> {
+  const existing = await prisma.item.findFirst({
+    where: { id, userId },
+    select: { isPinned: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
+  await prisma.item.update({
+    where: { id },
+    data: { isPinned: !existing.isPinned },
   });
 
   return getItemDetail(userId, id);

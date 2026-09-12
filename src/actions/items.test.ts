@@ -4,6 +4,7 @@ import {
   createItem,
   deleteItem,
   toggleItemFavorite,
+  toggleItemPin,
   updateItem,
 } from "@/actions/items";
 
@@ -13,6 +14,7 @@ const {
   updateItemRecordMock,
   deleteItemRecordMock,
   toggleItemFavoriteRecordMock,
+  toggleItemPinRecordMock,
   r2KeyFromUrlMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
@@ -20,6 +22,7 @@ const {
   updateItemRecordMock: vi.fn(),
   deleteItemRecordMock: vi.fn(),
   toggleItemFavoriteRecordMock: vi.fn(),
+  toggleItemPinRecordMock: vi.fn(),
   r2KeyFromUrlMock: vi.fn(),
 }));
 
@@ -32,6 +35,7 @@ vi.mock("@/lib/db/items", () => ({
   updateItem: updateItemRecordMock,
   deleteItem: deleteItemRecordMock,
   toggleItemFavorite: toggleItemFavoriteRecordMock,
+  toggleItemPin: toggleItemPinRecordMock,
 }));
 
 vi.mock("@/lib/r2", () => ({
@@ -56,6 +60,7 @@ beforeEach(() => {
   updateItemRecordMock.mockReset();
   deleteItemRecordMock.mockReset();
   toggleItemFavoriteRecordMock.mockReset();
+  toggleItemPinRecordMock.mockReset();
   r2KeyFromUrlMock.mockReset();
   authMock.mockResolvedValue({ user: { id: "user-1" } });
   r2KeyFromUrlMock.mockImplementation((url: string) =>
@@ -388,6 +393,57 @@ describe("toggleItemFavorite action", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await toggleItemFavorite("item-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "Something went wrong. Please try again.",
+    });
+  });
+});
+
+describe("toggleItemPin action", () => {
+  it("rejects an unauthenticated caller before touching the database", async () => {
+    authMock.mockResolvedValue(null);
+
+    const result = await toggleItemPin("item-1");
+
+    expect(result).toEqual({
+      success: false,
+      error: "You must be signed in to do that",
+    });
+    expect(toggleItemPinRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a blank item id", async () => {
+    const result = await toggleItemPin("   ");
+
+    expect(result).toEqual({ success: false, error: "Invalid item" });
+    expect(toggleItemPinRecordMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the flipped detail from the query", async () => {
+    const detail = { id: "item-1", isPinned: true };
+    toggleItemPinRecordMock.mockResolvedValue(detail);
+
+    const result = await toggleItemPin("item-1");
+
+    expect(toggleItemPinRecordMock).toHaveBeenCalledWith("user-1", "item-1");
+    expect(result).toEqual({ success: true, data: detail });
+  });
+
+  it("surfaces a not-found from the query", async () => {
+    toggleItemPinRecordMock.mockResolvedValue(null);
+
+    const result = await toggleItemPin("missing");
+
+    expect(result).toEqual({ success: false, error: "Item not found" });
+  });
+
+  it("fails soft when the query throws", async () => {
+    toggleItemPinRecordMock.mockRejectedValue(new Error("db down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await toggleItemPin("item-1");
 
     expect(result).toEqual({
       success: false,
