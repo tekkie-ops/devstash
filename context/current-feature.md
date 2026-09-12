@@ -1,14 +1,31 @@
-# Current Feature
+# Current Feature: Editor Preferences Settings
 
 ## Status
 
-
+In Progress
 
 ## Goals
 
-
+- Add an editor preferences section to the Settings page
+- Font size dropdown
+- Tab size dropdown
+- Word wrap toggle (default: on)
+- Minimap toggle (default: off)
+- Theme dropdown: `vs-dark`, `monokai`, `github-dark` (default: `vs-dark`)
+- Persist preferences in a new `editorPreferences` JSON column on `User`
+- Create and run a Prisma migration for the new column (never `db push`)
+- Create a server action to update preferences
+- Apply the stored preferences to the Monaco `CodeEditor` component
+- Auto-save on change (no explicit save button), with a success toast
+- Create an `EditorPreferencesContext` for client components to read/update preferences
 
 ## Notes
+
+- Source spec: @context/features/editor-settings-spec.md
+- Settings UI lives on `/settings` (see the 2026-09-12 Settings Page history entry) — this section is added there, alongside Change Password / Danger Zone.
+- Monaco is only used for `snippet`/`command` items via `CodeEditor.tsx` (`CODE_TYPES`); preferences (font size, tab size, word wrap, minimap, theme) need to flow into both the view (read-only) and edit Monaco instances in `ItemDrawer`/`ItemDrawerEditForm`, and into `CreateItemDialog`'s Monaco instance.
+- `CodeEditor.tsx` currently defines its own `devstash-dark` theme in `beforeMount`; the new theme dropdown (`vs-dark`/`monokai`/`github-dark`) will need equivalent theme definitions or Monaco's built-ins swapped in based on the selected value.
+- Auto-save-on-change implies debouncing or at least an action call per control change, since there's no save button — worth deciding during implementation.
 
 ## History
 

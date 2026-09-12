@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
+import { EditorPreferencesForm } from "@/components/settings/EditorPreferencesForm";
 import {
   Card,
   CardContent,
@@ -28,6 +29,19 @@ export default async function SettingsPage() {
         <h1 className="font-heading text-3xl font-semibold">Settings</h1>
         <p className="text-muted-foreground">Manage your account</p>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Editor preferences</CardTitle>
+          <CardDescription>
+            Customize the code editor used for snippets and commands. Changes save
+            automatically.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EditorPreferencesForm />
+        </CardContent>
+      </Card>
 
       {account?.hasPassword ? (
         <Card>
