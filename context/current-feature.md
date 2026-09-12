@@ -1,39 +1,14 @@
-# Current Feature: Collection Edit, Delete & Favorite
+# Current Feature
 
 ## Status
 
-In Progress
+
 
 ## Goals
 
-- On `/collections/[id]`, add Edit, Delete, and Favorite buttons/icons to the page.
-- Favorite is icon/button only for now — no backend wiring, no `isFavorite` mutation yet.
-- Edit opens a modal to edit the collection's metadata (name, description).
-- Delete requires a confirmation before proceeding.
-- Deleting a collection must NOT delete its items — items should simply no longer belong to that
-  collection (only the `ItemCollection` join rows for that collection go away; the `Item` rows and
-  their other collection memberships are untouched).
-- On `CollectionCard` (used on both `/collections` and the dashboard's Recent Collections), the
-  existing 3-dot icon should open a dropdown with Edit, Delete, and Favorite actions.
-- Clicking anywhere else on the card still navigates to `/collections/[id]` — only the dropdown
-  trigger/menu should intercept the click.
+
 
 ## Notes
-
-- `Collection.isFavorite` already exists in the schema (no migration needed) — this feature only
-  adds the UI affordance, per the goal of not implementing favorite behavior yet.
-- Deleting a `Collection` row already cascades the `ItemCollection` join rows via
-  `onDelete: Cascade` in the schema, and does not touch `Item` rows — schema behavior already
-  matches the "items stay, only membership goes away" requirement.
-- Collection Create (`0000aab`) used a `POST /api/collections` API route rather than a Server
-  Action, per that feature's explicit spec. Follow the same pattern for edit/delete
-  (`PATCH`/`DELETE /api/collections/[id]`) for consistency, unless there's a reason to diverge.
-- `CollectionCard.tsx` currently wraps the whole card in a `Link` to `/collections/[id]` (set by
-  Dashboard UI Phase 3 / Dashboard Collections). Adding a dropdown trigger inside it will need
-  restructuring so the trigger doesn't also navigate (e.g. `stopPropagation` on the trigger, or
-  making the card a `div` with an internal link/overlay instead of an outer `<a>`).
-- `/collections/[id]`'s own action buttons are separate from the card's dropdown — same three
-  actions (Edit/Delete/Favorite), just surfaced directly on the detail page instead of in a menu.
 
 
 
@@ -114,3 +89,5 @@ In Progress
 - 2026-09-12: Completed Add Item to Collections (`3910653`, merged `--no-ff`). A "Collections" multi-select — toggle buttons in the same visual style as the existing Type selector — now appears on both the New Item dialog (`CreateItemDialog.tsx`) and the item drawer's edit form (`ItemDrawerEditForm.tsx`), letting an item be placed in zero, one, or many of the signed-in user's collections. New shared `src/components/items/CollectionMultiSelect.tsx` (client, no new deps) renders the picker off a plain `{id,name}[]` + selected-ids array; the drawer seeds/reseeds its selection from `detail.collections` on entering edit mode (mirroring the existing tags pattern), and the now-editable Collections moved out of `ReadOnlyMeta`'s view-only badge block into the main editable field list. `updateItemSchema` (inherited by `createItemSchema`) gained a deduped `collectionIds: string[]` field defaulting to `[]`; `src/lib/db/items.ts` gained a `resolveOwnedCollectionIds(userId, collectionIds)` helper — the security boundary, filtering the incoming ids down to ones `userId` actually owns before ever using them in a Prisma call, so a tampered id can never attach an item to someone else's collection — used by both `createItem` (connects on create) and `updateItem` (wholesale replace via `deleteMany` + recreate, same approach already used for tags). New `getCollectionsForSelect(userId)` in `src/lib/db/collections.ts` (+ exported `CollectionOption` type) feeds the picker's options; `TopBar.tsx`, `dashboard/page.tsx`, and `items/[type]/page.tsx` each now call `auth()` and fetch it themselves to pass down to `CreateItemDialog`/`ItemDrawerProvider` respectively, since `/items/[type]` doesn't share the dashboard's `TopBar`-bearing layout. Deliberately out of scope, per the spec: collection detail/listing pages (`/collections/[id]`, `/collections`). Updated `src/lib/validations/items.test.ts` and `src/actions/items.test.ts` for the new field — 85 total, up from 84. Verified via Playwright + Neon MCP against the seeded dev database (signed in as `demo@devstash.io`): created a snippet with two collections selected (DB confirmed both `ItemCollection` rows), opened it in the drawer to see both as read-only badges, re-entered edit mode to see both pre-selected as pressed toggle buttons, removed one and added a different one, saved, and confirmed via SQL the join rows updated to the new set with no stale rows; deleted the test item afterward (cascade confirmed, dev database back to its prior state). No console errors. Build, lint, and all 85 tests passed.
 
 - 2026-09-12: Completed Collections Pages (`fe56f74`, merged `--no-ff`). Added `/collections` (all of the signed-in user's collections, reusing the existing `CollectionCard`) and `/collections/[id]` (the collection's items, reusing the existing `ItemCard`), both standalone pages following the `/profile`/`/items/[type]` pattern (no dashboard sidebar shell). `src/lib/db/collections.ts` gained `getAllCollections(userId)` and `getCollectionDetail(userId, id)` (both reusing `toCollectionSummary`/`COLLECTION_ITEMS_INCLUDE`), and `src/lib/db/items.ts` gained `getItemsByCollectionId(userId, collectionId)` — all three explicitly `userId`-scoped, not the demo-user hardcoding, per the pattern set by "Fix Item Authorization" and Collection Create. `/collections/[id]` 404s via `notFound()` when `getCollectionDetail` returns null (unknown or not-owned id), mirroring `/items/[type]`'s unknown-slug handling; the items query itself is a second, independent `userId` filter so it can never leak another user's items even if the ownership check were bypassed. The sidebar's "View all collections" link and `CollectionCard`'s own link already pointed at these routes from the Sept 6 Stats & Sidebar and Sept 7 Items List View features respectively — both were dead links until now, so no component changes were needed there. `src/proxy.ts`'s matcher gained `/collections/:path*`, alongside `/dashboard`, `/items`, and `/profile`. No new server-action/schema logic — purely new query functions mirroring existing patterns plus two display pages — so no new unit tests; the existing 85 pass unchanged. Verified via Playwright against the seeded dev database (signed in as `demo@devstash.io`): `/collections` listed all 6 collections with correct counts/dominant-type accents; `/collections/[id]` for "Terminal Commands" rendered its 4 mixed-type items as cards, and clicking one opened the full item drawer with correct detail; an unknown collection id correctly 404'd. Build, lint, and all 85 tests passed.
+
+- 2026-09-12: Completed Collection Edit, Delete & Favorite (`f90b205`, merged `--no-ff`). `/collections/[id]` gained a `CollectionDetailActions` button row (Favorite/Edit/Delete) next to the title; `CollectionCard` (used on both `/collections` and the dashboard) gained a 3-dot `CollectionActionsMenu` dropdown with the same three actions. Favorite is display-only in both places — an inert icon/button reflecting `isFavorite`, no mutation wired, per the spec. Edit opens a fully-controlled `EditCollectionDialog` (name/description, re-seeded from the collection each time it opens via an "adjust state during render" check rather than a `useEffect`, which would have tripped `react-hooks/set-state-in-effect`) that `PATCH`s a new `/api/collections/[id]` route; Delete opens a controlled `DeleteCollectionDialog` (`AlertDialog`, explicit "items will not be deleted" copy) that `DELETE`s the same route, redirecting to `/collections` from the detail page or refreshing in place from a card. Both routes mirror Collection Create's existing route-based pattern (a route rather than a Server Action) and reuse a new `updateCollection`/`deleteCollection` pair in `src/lib/db/collections.ts` — delete only ever removes the `Collection` row itself; the schema's `onDelete: Cascade` on `ItemCollection` (not `Item`) already guarantees items survive and keep their other memberships, so no application code was needed to enforce that. `updateCollectionSchema` is a plain alias of `createCollectionSchema` (same name/description shape) rather than a duplicate. The one structural decision: `CollectionCard`'s dropdown trigger is an absolutely positioned sibling of the card's `Link`, not nested inside it — since the `Link` is non-positioned/in-flow, the positioned trigger paints above it and intercepts its own clicks with no `stopPropagation` needed, the same reasoning already used for `ItemCard`'s `CopyItemButton`. Verified via Playwright against the seeded dev database (signed in as `demo@devstash.io`): created a throwaway collection, edited its name/description from both the card dropdown and the detail page (fields correctly re-seeded, toast, live update), confirmed the card's dropdown never triggers navigation while the rest of the card still does; added an item to that collection plus "Design Resources", deleted the collection (confirmation dialog showed the expected copy), and confirmed the item still existed — now only in Design Resources — both on that collection's page and on `/items/snippets`; cleaned up the test item and collection afterward, dev database back to its prior state (22 items, 6 collections). No console errors. Build, lint, and all 85 tests passed.
