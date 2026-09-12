@@ -39,6 +39,7 @@ const validInput = {
   url: null,
   language: "typescript",
   tags: ["a", "b"],
+  collectionIds: ["col-1"],
 };
 
 beforeEach(() => {
@@ -62,6 +63,7 @@ describe("createItem action", () => {
     url: null,
     language: "typescript",
     tags: ["a", "b"],
+    collectionIds: ["col-1"],
   };
 
   it("rejects an unauthenticated caller before touching the database", async () => {
@@ -182,6 +184,7 @@ describe("createItem action", () => {
       url: null,
       language: "typescript",
       tags: ["a", "b"],
+      collectionIds: ["col-1"],
       fileUrl: null,
       fileName: null,
       fileSize: null,
@@ -254,6 +257,7 @@ describe("updateItem action", () => {
       url: null,
       language: "typescript",
       tags: ["a", "b"],
+      collectionIds: ["col-1"],
     });
     expect(result).toEqual({ success: true, data: detail });
   });

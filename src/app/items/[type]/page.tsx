@@ -1,18 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { auth } from "@/auth";
 import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { FileListRow } from "@/components/items/FileListRow";
 import { ImageThumbnailCard } from "@/components/items/ImageThumbnailCard";
 import { ItemCard } from "@/components/items/ItemCard";
 import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
+import { getCollectionsForSelect } from "@/lib/db/collections";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 
 export default async function ItemsByTypePage({
   params,
 }: PageProps<"/items/[type]">) {
   const { type: slug } = await params;
-  const result = await getItemsByTypeSlug(slug);
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  const [result, availableCollections] = await Promise.all([
+    getItemsByTypeSlug(slug),
+    userId ? getCollectionsForSelect(userId) : Promise.resolve([]),
+  ]);
 
   if (!result) {
     notFound();
@@ -35,7 +43,7 @@ export default async function ItemsByTypePage({
       </header>
 
       {items.length > 0 ? (
-        <ItemDrawerProvider>
+        <ItemDrawerProvider availableCollections={availableCollections}>
           {isFileType ? (
             <div className="divide-y overflow-hidden rounded-xl border bg-card">
               {items.map((item) => (

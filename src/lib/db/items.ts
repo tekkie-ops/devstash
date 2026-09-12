@@ -193,6 +193,28 @@ export async function getCreatableItemTypes(): Promise<CollectionItemType[]> {
 }
 
 /**
+ * Filters `collectionIds` down to the ones `userId` actually owns, so a caller
+ * can never attach an item to someone else's collection by guessing/tampering
+ * with an id — the same "userId is the security boundary" approach used
+ * throughout this file.
+ */
+async function resolveOwnedCollectionIds(
+  userId: string,
+  collectionIds: string[],
+): Promise<string[]> {
+  if (collectionIds.length === 0) {
+    return [];
+  }
+
+  const owned = await prisma.collection.findMany({
+    where: { id: { in: collectionIds }, userId },
+    select: { id: true },
+  });
+
+  return owned.map((collection) => collection.id);
+}
+
+/**
  * Creates an item owned by `userId` from the New Item dialog. Resolves the
  * chosen type name to its system `ItemType`; returns null when the type name is
  * unknown. `file` / `image` items store the uploaded R2 object's metadata and
@@ -213,6 +235,10 @@ export async function createItem(
   }
 
   const isFile = (FILE_ITEM_TYPES as readonly string[]).includes(data.type);
+  const collectionIds = await resolveOwnedCollectionIds(
+    userId,
+    data.collectionIds,
+  );
 
   const created = await prisma.item.create({
     data: {
@@ -235,6 +261,11 @@ export async function createItem(
               create: { name },
             },
           },
+        })),
+      },
+      collections: {
+        create: collectionIds.map((collectionId) => ({
+          collection: { connect: { id: collectionId } },
         })),
       },
     },
@@ -278,9 +309,10 @@ export async function getItemDetail(
 /**
  * Applies an edit from the drawer, scoped to the item's owner; returns null
  * when the id matches nothing `userId` owns.
- * Tags are replaced wholesale — existing join rows are dropped and the new set
- * is connect-or-created. Returns the refreshed `ItemDetail` so the drawer can
- * update without a second fetch.
+ * Tags and collections are both replaced wholesale — existing join rows are
+ * dropped and the new sets rebuilt (tags connect-or-created, collections
+ * filtered to ones `userId` owns via `resolveOwnedCollectionIds`). Returns the
+ * refreshed `ItemDetail` so the drawer can update without a second fetch.
  */
 export async function updateItem(
   userId: string,
@@ -295,6 +327,11 @@ export async function updateItem(
   if (!existing) {
     return null;
   }
+
+  const collectionIds = await resolveOwnedCollectionIds(
+    userId,
+    data.collectionIds,
+  );
 
   await prisma.item.update({
     where: { id },
@@ -313,6 +350,12 @@ export async function updateItem(
               create: { name },
             },
           },
+        })),
+      },
+      collections: {
+        deleteMany: {},
+        create: collectionIds.map((collectionId) => ({
+          collection: { connect: { id: collectionId } },
         })),
       },
     },

@@ -10,6 +10,11 @@ export interface CollectionItemType {
   color: string;
 }
 
+export interface CollectionOption {
+  id: string;
+  name: string;
+}
+
 export interface CollectionSummary {
   id: string;
   name: string;
@@ -131,6 +136,17 @@ export async function getRecentNonFavoriteCollections(
   });
 
   return collections.map(toCollectionSummary);
+}
+
+/** All of a user's collections, name-sorted, for the item create/edit collection picker. */
+export async function getCollectionsForSelect(
+  userId: string,
+): Promise<CollectionOption[]> {
+  return prisma.collection.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 }
 
 export async function getCollectionStats(userId: string): Promise<{

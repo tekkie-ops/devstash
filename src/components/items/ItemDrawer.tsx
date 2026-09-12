@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { CollectionOption } from "@/lib/db/collections";
 import type { ItemDetail } from "@/lib/db/items";
 import {
   CODE_TYPES,
@@ -33,6 +34,8 @@ interface ItemDrawerProps {
   detail: ItemDetail | null;
   loading: boolean;
   error: string | null;
+  /** The signed-in user's collections, for the edit form's collection picker. */
+  availableCollections: CollectionOption[];
   /** Called with the refreshed detail after a successful save. */
   onSaved: (detail: ItemDetail) => void;
   /** Called after a successful delete — closes the drawer and clears detail. */
@@ -45,6 +48,7 @@ export function ItemDrawer({
   detail,
   loading,
   error,
+  availableCollections,
   onSaved,
   onDeleted,
 }: ItemDrawerProps) {
@@ -67,6 +71,7 @@ export function ItemDrawer({
           <ItemDrawerContent
             key={detail.id}
             detail={detail}
+            availableCollections={availableCollections}
             onSaved={onSaved}
             onDeleted={onDeleted}
           />
@@ -83,10 +88,12 @@ export function ItemDrawer({
  */
 function ItemDrawerContent({
   detail,
+  availableCollections,
   onSaved,
   onDeleted,
 }: {
   detail: ItemDetail;
+  availableCollections: CollectionOption[];
   onSaved: (detail: ItemDetail) => void;
   onDeleted: () => void;
 }) {
@@ -107,6 +114,9 @@ function ItemDrawerContent({
   const [language, setLanguage] = useState(detail.language ?? "");
   const [url, setUrl] = useState(detail.url ?? "");
   const [tagsInput, setTagsInput] = useState(detail.tags.join(", "));
+  const [collectionIds, setCollectionIds] = useState(
+    detail.collections.map((collection) => collection.id),
+  );
 
   function seedFromDetail() {
     setTitle(detail.title);
@@ -115,6 +125,7 @@ function ItemDrawerContent({
     setLanguage(detail.language ?? "");
     setUrl(detail.url ?? "");
     setTagsInput(detail.tags.join(", "));
+    setCollectionIds(detail.collections.map((collection) => collection.id));
   }
 
   function startEditing() {
@@ -139,6 +150,7 @@ function ItemDrawerContent({
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
+      collectionIds,
     });
     setSaving(false);
 
@@ -223,6 +235,9 @@ function ItemDrawerContent({
             onUrlChange={setUrl}
             tagsInput={tagsInput}
             onTagsInputChange={setTagsInput}
+            collectionIds={collectionIds}
+            onCollectionIdsChange={setCollectionIds}
+            availableCollections={availableCollections}
             showContent={showContent}
             showCode={showCode}
             showMarkdown={showMarkdown}
