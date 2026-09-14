@@ -42,7 +42,7 @@ export function ItemFavoriteButton({
       <Star
         className={cn("size-4", isFavorite && "fill-amber-400 text-amber-400")}
       />
-      {showLabel && "Favorite"}
+      {showLabel && <span className="hidden sm:inline">Favorite</span>}
     </Button>
   );
 }

@@ -45,7 +45,7 @@ export function ItemPinButton({
           detail.isPinned && "fill-foreground text-foreground",
         )}
       />
-      {showLabel && "Pin"}
+      {showLabel && <span className="hidden sm:inline">Pin</span>}
     </Button>
   );
 }

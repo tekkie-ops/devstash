@@ -2,15 +2,24 @@
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+Complete
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Fix mobile-width (≤390px) layout bugs found by a live-browser UI review of the homepage and dashboard (2026-09-14):
+
+- Dashboard `TopBar` ("New Collection" / "New Item" buttons) renders fully off-screen at 390px with no scrollbar and no responsive fallback — mobile users currently have no way to create an item or collection from the dashboard.
+- Item drawer's `ViewActionBar` is clipped at 390px — the Delete button is fully off-screen and Edit is partially clipped, so mobile users can't delete an item and can barely tap Edit.
+
+Both share the same root cause: a non-shrinking (`shrink-0 whitespace-nowrap` from the shared `Button` primitive), non-wrapping flex row of actions with no responsive variant.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Source: UI review via Playwright against the dev server, signed in as `demo@devstash.io`, at 1440px and 390px viewports.
+- `src/components/dashboard/TopBar.tsx` — action group (Favorites, New Collection, New Item) needs a responsive treatment below `sm`: candidates are icon-only buttons (with `aria-label`) or moving creation actions into a mobile menu/FAB. The homepage `Navbar.tsx` already has precedent for hiding non-essential items below `sm`.
+- `src/components/dashboard/ItemDrawerActionBar.tsx` (`ViewActionBar`) — same pattern needed for Favorite/Pin/Copy/Edit/Delete row.
+- Out of scope (flagged in the same review but not blocking, left for a future pass): no mobile hamburger menu for the homepage's `#features`/`#pricing` anchor links; homepage footer's About/Blog/Privacy/Terms links are still `href="#"` placeholders.
+- Exact measurements confirming the bug: at a 375px viewport, TopBar's "New Collection" button spans x=382–525px and "New Item" spans x=533–639px; the drawer's Delete button spans x=426–454px and Edit's right edge sits at x=422px — all past the viewport edge.
 
 ## History
 

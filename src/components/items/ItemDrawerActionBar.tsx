@@ -79,15 +79,27 @@ export function ViewActionBar({
         onToggled={onFavorited}
       />
       <ItemPinButton detail={detail} showLabel onToggled={onPinned} />
-      <Button type="button" variant="ghost" size="sm" onClick={handleCopy}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-label="Copy"
+        onClick={handleCopy}
+      >
         <Copy className="size-4" />
-        Copy
+        <span className="hidden sm:inline">Copy</span>
       </Button>
 
       <div className="ml-auto flex items-center gap-1">
-        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-label="Edit"
+          onClick={onEdit}
+        >
           <Pencil className="size-4" />
-          Edit
+          <span className="hidden sm:inline">Edit</span>
         </Button>
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <AlertDialogTrigger asChild>
