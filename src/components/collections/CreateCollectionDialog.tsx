@@ -77,9 +77,9 @@ export function CreateCollectionDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" aria-label="New Collection">
           <FolderPlus />
-          New Collection
+          <span className="hidden sm:inline">New Collection</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="gap-0 overflow-y-auto p-0 sm:max-w-lg">

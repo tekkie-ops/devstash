@@ -18,7 +18,7 @@ export function SearchTrigger() {
       type="button"
       onClick={openPalette}
       aria-haspopup="dialog"
-      className="flex h-8 w-full max-w-md items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-base text-muted-foreground outline-none transition-colors hover:border-ring/50 md:text-sm"
+      className="flex h-8 w-full min-w-0 max-w-md items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 text-base text-muted-foreground outline-none transition-colors hover:border-ring/50 md:text-sm"
     >
       <Search className="size-4 shrink-0" aria-hidden="true" />
       <span className="flex-1 truncate text-left">
