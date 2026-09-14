@@ -2,26 +2,19 @@
 
 ## Status
 
-Complete
+<!-- Not Started | In Progress | Complete -->
 
 ## Goals
 
-Fix mobile-width (≤390px) layout bugs found by a live-browser UI review of the homepage and dashboard (2026-09-14):
-
-- Dashboard `TopBar` ("New Collection" / "New Item" buttons) renders fully off-screen at 390px with no scrollbar and no responsive fallback — mobile users currently have no way to create an item or collection from the dashboard.
-- Item drawer's `ViewActionBar` is clipped at 390px — the Delete button is fully off-screen and Edit is partially clipped, so mobile users can't delete an item and can barely tap Edit.
-
-Both share the same root cause: a non-shrinking (`shrink-0 whitespace-nowrap` from the shared `Button` primitive), non-wrapping flex row of actions with no responsive variant.
+<!-- Bullet points of what success looks like -->
 
 ## Notes
 
-- Source: UI review via Playwright against the dev server, signed in as `demo@devstash.io`, at 1440px and 390px viewports.
-- `src/components/dashboard/TopBar.tsx` — action group (Favorites, New Collection, New Item) needs a responsive treatment below `sm`: candidates are icon-only buttons (with `aria-label`) or moving creation actions into a mobile menu/FAB. The homepage `Navbar.tsx` already has precedent for hiding non-essential items below `sm`.
-- `src/components/dashboard/ItemDrawerActionBar.tsx` (`ViewActionBar`) — same pattern needed for Favorite/Pin/Copy/Edit/Delete row.
-- Out of scope (flagged in the same review but not blocking, left for a future pass): no mobile hamburger menu for the homepage's `#features`/`#pricing` anchor links; homepage footer's About/Blog/Privacy/Terms links are still `href="#"` placeholders.
-- Exact measurements confirming the bug: at a 375px viewport, TopBar's "New Collection" button spans x=382–525px and "New Item" spans x=533–639px; the drawer's Delete button spans x=426–454px and Edit's right edge sits at x=422px — all past the viewport edge.
+<!-- Additional context, constraints, or details from spec -->
 
 ## History
+
+- 2026-09-14: Completed Fix Mobile Action Bar Overflow (`d6d72c5`, merged `--no-ff`). Fixed two mobile-width (≤390px) layout bugs surfaced by a live-browser Playwright UI review (via the `ui-reviewer` agent) of the homepage and dashboard, signed in as `demo@devstash.io`. The real root cause of the dashboard `TopBar` bug wasn't the "New Collection"/"New Item" buttons themselves — it was `SearchTrigger.tsx` missing `min-w-0` on its flex item, so the button's `truncate` span never actually shrank (a `white-space: nowrap` `truncate` span still reports its full text width as the flex item's automatic minimum size unless an ancestor has `min-width: 0`), leaving it ~265px wide and pushing the action buttons fully off-screen (measured 380px+) with no scrollbar. `New Collection`/`New Item` (`CreateCollectionDialog.tsx`/`CreateItemDialog.tsx`) now also collapse to icon-only below `sm` via a `hidden sm:inline` text span plus an `aria-label`, both as a further safety margin and because a labeled button at that width would still crowd the row. The same `hidden sm:inline` + `aria-label` pattern was applied to the item drawer's `ViewActionBar` (`ItemDrawerActionBar.tsx`, plus `ItemFavoriteButton.tsx`/`ItemPinButton.tsx`) where Delete was fully clipped off-screen (x=426–454px past a 375–390px viewport) and Edit partially clipped — Delete was already icon-only via `icon-sm`, so only Favorite/Pin/Copy/Edit needed the treatment. No server actions or utilities were touched, so no new unit tests; the existing 111 pass unchanged. Verified via Playwright at 390px and 1440px: TopBar and drawer action bar both fit with zero off-screen elements post-fix (confirmed via `getBoundingClientRect`, not just visually), no regression to full labels at 1440px, no console errors. Deliberately left out of scope (documented as a known gap, not blocking): the homepage has no mobile hamburger menu for its `#features`/`#pricing` anchor links, and its footer's About/Blog/Privacy/Terms links are still `href="#"` placeholders. Build, lint, and all 111 tests passed.
 
 <!-- Keep this updated. Earliest to latest -->
 
