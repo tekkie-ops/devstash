@@ -602,6 +602,11 @@ export async function getSearchableItems(
   }));
 }
 
+/** Total items owned by userId — used by the free-tier item-count gate. */
+export async function getItemCountForUser(userId: string): Promise<number> {
+  return prisma.item.count({ where: { userId } });
+}
+
 export async function getItemStats(): Promise<{
   total: number;
   favorites: number;
