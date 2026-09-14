@@ -35,14 +35,9 @@ export function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
 
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <>
-              <Button asChild variant="ghost">
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/dashboard">Go to Dashboard</Link>
-              </Button>
-            </>
+            <Button asChild>
+              <Link href="/dashboard">Go to Dashboard</Link>
+            </Button>
           ) : (
             <>
               <Button asChild variant="ghost">
