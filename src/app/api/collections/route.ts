@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
-import { createCollection } from "@/lib/db/collections";
+import { createCollection, getCollectionStats } from "@/lib/db/collections";
+import {
+  FREE_COLLECTION_LIMIT,
+  collectionLimitMessage,
+  isFeatureGatingEnabled,
+} from "@/lib/plan-limits";
+import { prisma } from "@/lib/prisma";
 import { createCollectionSchema } from "@/lib/validations/collections";
 
 /**
@@ -30,6 +36,23 @@ export async function POST(request: Request) {
       },
       { status: 400 },
     );
+  }
+
+  if (isFeatureGatingEnabled()) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isPro: true },
+    });
+
+    if (!user?.isPro) {
+      const stats = await getCollectionStats(session.user.id);
+      if (stats.total >= FREE_COLLECTION_LIMIT) {
+        return NextResponse.json(
+          { success: false, error: collectionLimitMessage() },
+          { status: 403 },
+        );
+      }
+    }
   }
 
   try {
