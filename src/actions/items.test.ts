@@ -15,7 +15,9 @@ const {
   deleteItemRecordMock,
   toggleItemFavoriteRecordMock,
   toggleItemPinRecordMock,
+  getItemCountForUserMock,
   r2KeyFromUrlMock,
+  findUniqueMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   createItemRecordMock: vi.fn(),
@@ -23,7 +25,9 @@ const {
   deleteItemRecordMock: vi.fn(),
   toggleItemFavoriteRecordMock: vi.fn(),
   toggleItemPinRecordMock: vi.fn(),
+  getItemCountForUserMock: vi.fn(),
   r2KeyFromUrlMock: vi.fn(),
+  findUniqueMock: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({
@@ -36,10 +40,19 @@ vi.mock("@/lib/db/items", () => ({
   deleteItem: deleteItemRecordMock,
   toggleItemFavorite: toggleItemFavoriteRecordMock,
   toggleItemPin: toggleItemPinRecordMock,
+  getItemCountForUser: getItemCountForUserMock,
 }));
 
 vi.mock("@/lib/r2", () => ({
   r2KeyFromUrl: r2KeyFromUrlMock,
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    user: {
+      findUnique: findUniqueMock,
+    },
+  },
 }));
 
 const R2_BASE = "https://pub-test.r2.dev";
@@ -54,6 +67,8 @@ const validInput = {
   collectionIds: ["col-1"],
 };
 
+const originalFeatureGating = process.env.FEATURE_GATING_ENABLED;
+
 beforeEach(() => {
   authMock.mockReset();
   createItemRecordMock.mockReset();
@@ -61,11 +76,18 @@ beforeEach(() => {
   deleteItemRecordMock.mockReset();
   toggleItemFavoriteRecordMock.mockReset();
   toggleItemPinRecordMock.mockReset();
+  getItemCountForUserMock.mockReset();
   r2KeyFromUrlMock.mockReset();
+  findUniqueMock.mockReset();
   authMock.mockResolvedValue({ user: { id: "user-1" } });
   r2KeyFromUrlMock.mockImplementation((url: string) =>
     url.startsWith(`${R2_BASE}/`) ? url.slice(R2_BASE.length + 1) : null,
   );
+  if (originalFeatureGating === undefined) {
+    delete process.env.FEATURE_GATING_ENABLED;
+  } else {
+    process.env.FEATURE_GATING_ENABLED = originalFeatureGating;
+  }
 });
 
 describe("createItem action", () => {
@@ -223,6 +245,85 @@ describe("createItem action", () => {
     expect(result).toEqual({
       success: false,
       error: "Something went wrong. Please try again.",
+    });
+  });
+
+  describe("with feature gating", () => {
+    beforeEach(() => {
+      process.env.FEATURE_GATING_ENABLED = "true";
+    });
+
+    it("rejects a free user at or over the item limit", async () => {
+      findUniqueMock.mockResolvedValue({ isPro: false });
+      getItemCountForUserMock.mockResolvedValue(50);
+
+      const result = await createItem(validCreateInput);
+
+      expect(result).toEqual({
+        success: false,
+        error:
+          "Free plan is limited to 50 items. Upgrade to Pro for unlimited items.",
+      });
+      expect(createItemRecordMock).not.toHaveBeenCalled();
+    });
+
+    it("allows a free user under the item limit", async () => {
+      findUniqueMock.mockResolvedValue({ isPro: false });
+      getItemCountForUserMock.mockResolvedValue(49);
+      const detail = { id: "item-9", title: "New snippet" };
+      createItemRecordMock.mockResolvedValue(detail);
+
+      const result = await createItem(validCreateInput);
+
+      expect(result).toEqual({ success: true, data: detail });
+    });
+
+    it("allows a Pro user over the item limit", async () => {
+      findUniqueMock.mockResolvedValue({ isPro: true });
+      getItemCountForUserMock.mockResolvedValue(500);
+      const detail = { id: "item-9", title: "New snippet" };
+      createItemRecordMock.mockResolvedValue(detail);
+
+      const result = await createItem(validCreateInput);
+
+      expect(getItemCountForUserMock).not.toHaveBeenCalled();
+      expect(result).toEqual({ success: true, data: detail });
+    });
+
+    it("rejects a free user creating a Pro-only type regardless of item count", async () => {
+      findUniqueMock.mockResolvedValue({ isPro: false });
+
+      const result = await createItem({
+        type: "image",
+        title: "Runbook",
+        description: null,
+        content: null,
+        url: null,
+        language: null,
+        tags: [],
+        fileUrl: `${R2_BASE}/items/file/abc.pdf`,
+        fileName: "runbook.pdf",
+        fileSize: 4096,
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: "Files and images are a Pro feature. Upgrade to Pro to upload them.",
+      });
+      expect(getItemCountForUserMock).not.toHaveBeenCalled();
+      expect(createItemRecordMock).not.toHaveBeenCalled();
+    });
+
+    it("leaves current behavior unchanged when gating is off", async () => {
+      delete process.env.FEATURE_GATING_ENABLED;
+      const detail = { id: "item-9", title: "New snippet" };
+      createItemRecordMock.mockResolvedValue(detail);
+
+      const result = await createItem(validCreateInput);
+
+      expect(findUniqueMock).not.toHaveBeenCalled();
+      expect(getItemCountForUserMock).not.toHaveBeenCalled();
+      expect(result).toEqual({ success: true, data: detail });
     });
   });
 });

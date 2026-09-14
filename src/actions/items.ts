@@ -4,11 +4,20 @@ import { auth } from "@/auth";
 import {
   createItem as createItemRecord,
   deleteItem as deleteItemRecord,
+  getItemCountForUser,
   toggleItemFavorite as toggleItemFavoriteRecord,
   toggleItemPin as toggleItemPinRecord,
   updateItem as updateItemRecord,
 } from "@/lib/db/items";
 import type { ItemDetail } from "@/lib/db/items";
+import {
+  FREE_ITEM_LIMIT,
+  PRO_ONLY_ITEM_TYPES,
+  isFeatureGatingEnabled,
+  itemLimitMessage,
+  proTypeMessage,
+} from "@/lib/plan-limits";
+import { prisma } from "@/lib/prisma";
 import { r2KeyFromUrl } from "@/lib/r2";
 import {
   FILE_ITEM_TYPES,
@@ -47,6 +56,24 @@ export async function createItem(input: unknown): Promise<CreateItemResult> {
       success: false,
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
+  }
+
+  if (isFeatureGatingEnabled()) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isPro: true },
+    });
+
+    if (!user?.isPro) {
+      if (PRO_ONLY_ITEM_TYPES.includes(parsed.data.type)) {
+        return { success: false, error: proTypeMessage() };
+      }
+
+      const itemCount = await getItemCountForUser(session.user.id);
+      if (itemCount >= FREE_ITEM_LIMIT) {
+        return { success: false, error: itemLimitMessage() };
+      }
+    }
   }
 
   if (
