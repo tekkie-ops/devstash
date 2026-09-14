@@ -1,16 +1,26 @@
-# Current Feature
+# Current Feature: Homepage
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Replace the placeholder `/` page with the real marketing homepage, ported from the static prototype at `prototypes/homepage/` (`index.html`/`styles.css`/`script.js`) into Next.js/React + Tailwind v4 + ShadCN.
+- Same sections/layout/copy/visuals as the mockup: Nav, Hero (chaos → arrow → dashboard preview), Features grid, AI section, Pricing, closing CTA, Footer.
+- Real navigation wired in place of the mockup's `#` placeholders (see Notes), including a signed-in-aware Navbar/Hero (Sign In → Dashboard, Get Started → Go to Dashboard when a session exists).
+- Server components by default; `'use client'` only for the chaos icon animation, navbar scroll-opacity, scroll-triggered fade-ins, and the pricing monthly/yearly toggle.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Route: `src/app/page.tsx`, public, no auth gate — `src/proxy.ts` matcher untouched.
+- No new hardcoded hex values except the seven item-type accent colors from `project-overview.md` (`#3b82f6` snippet, `#8b5cf6` prompt, `#fde047` note, `#f97316` command, `#10b981` link, `#6b7280` file, `#ec4899` image), applied via inline `style` like `ItemTypeIcon`/`ItemCard`/`CollectionCard` already do — replaces the mockup's own separate placeholder palette.
+- ShadCN `Button` for CTAs/nav actions; plain `next/link` `Link` for real nav links; `<a href="#...">` only for same-page anchor scrolling (Features/Pricing nav + footer Product links).
+- Suggested breakdown under `src/components/homepage/`: `Navbar`, `Hero`, `ChaosVisual` (client), `DashboardPreview`, `FeaturesSection`, `AiSection`, `PricingSection` (client), `ClosingCta`, `Footer`. Split further only if a file grows unwieldy.
+- Keep it DRY — data-driven `.map()` over arrays for feature cards, pricing feature-list items, footer link columns, instead of copy-pasted JSX.
+- Nav targets: Logo→`/`; Features/Pricing→`#features`/`#pricing` anchors; Sign In→`/sign-in`; Get Started (navbar/hero/closing CTA)→`/register`; Hero "See Features"→`#features`; Pricing Free CTA→`/register`; Pricing Pro CTA→`/register` (no Stripe yet); Footer Features/Pricing→same anchors; Footer About/Blog/Privacy/Terms→inert `#` (out of scope).
+- Out of scope: Stripe/billing, `/about` `/blog` `/privacy` `/terms` pages, redirecting `/` to `/dashboard` for authed users.
+- References: `prototypes/homepage/{index.html,styles.css,script.js}`, `context/features/homepage-mockup-spec.md`, `context/project-overview.md`.
 
 ## History
 
