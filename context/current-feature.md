@@ -1,16 +1,22 @@
-# Current Feature
+# Current Feature: Gate Files/Images Behind Upgrade Page
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Free users who visit `/items/files` or `/items/images` see an upgrade prompt instead of the file/image listing.
+- Pro users see the existing listings unchanged (no regression).
+- Signed-out visitors are unaffected (already redirected to sign-in by `proxy.ts`).
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Gate follows the existing `isFeatureGatingEnabled()` toggle in `src/lib/plan-limits.ts` (default off), matching how `createItem`/`POST /api/collections` already enforce `PRO_ONLY_ITEM_TYPES` — keeps the project-overview.md dev note ("during development all users get full access") true here too. If `FEATURE_GATING_ENABLED` isn't set, everyone still sees the real listing.
+- `PRO_ONLY_ITEM_TYPES` (`["file", "image"]`), `proTypeMessage()` already exist in `src/lib/plan-limits.ts`.
+- `session.user.isPro` (`src/types/next-auth.d.ts`) is refreshed from the DB on every request via the `jwt` callback (Stripe Phase 1), so no extra DB read is needed for this check.
+- Gate lives in `src/app/items/[type]/page.tsx`, after `getItemsByTypeSlug` resolves `type.name`.
+- The upgrade CTA (monthly/yearly buttons calling `createCheckoutSession`) already exists in `src/components/settings/BillingSection.tsx` — extract it into a shared component rather than duplicating the Stripe checkout logic.
 
 ## History
 

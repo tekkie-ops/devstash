@@ -252,60 +252,6 @@ CMD ["npm", "start"]
     },
   ]);
 
-  await createCollection("Terminal Commands", "Useful shell commands for everyday development", [
-    {
-      title: "Undo last commit, keep changes",
-      typeName: "command",
-      description: "Soft reset one commit back",
-      content: `git reset --soft HEAD~1`,
-    },
-    {
-      title: "Remove stopped containers and dangling images",
-      typeName: "command",
-      description: "Docker cleanup",
-      content: `docker system prune -f`,
-    },
-    {
-      title: "Find and kill process on a port",
-      typeName: "command",
-      description: "Free up a busy port",
-      content: `lsof -ti:3000 | xargs kill -9`,
-    },
-    {
-      title: "List outdated npm packages",
-      typeName: "command",
-      description: "Check for available updates",
-      content: `npm outdated`,
-    },
-  ]);
-
-  await createCollection("Design Resources", "UI/UX resources and references", [
-    {
-      title: "Tailwind CSS Docs",
-      typeName: "link",
-      url: "https://tailwindcss.com/docs",
-      description: "Official Tailwind CSS documentation",
-    },
-    {
-      title: "shadcn/ui",
-      typeName: "link",
-      url: "https://ui.shadcn.com",
-      description: "Component library built on Radix UI",
-    },
-    {
-      title: "Radix Primitives",
-      typeName: "link",
-      url: "https://www.radix-ui.com/primitives",
-      description: "Unstyled, accessible UI primitives",
-    },
-    {
-      title: "Lucide Icons",
-      typeName: "link",
-      url: "https://lucide.dev",
-      description: "Open-source icon library",
-    },
-  ]);
-
   console.log("Seed complete.");
 }
 

@@ -3,23 +3,12 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { createBillingPortalSession, createCheckoutSession } from "@/actions/billing";
+import { createBillingPortalSession } from "@/actions/billing";
+import { UpgradeButtons } from "@/components/billing/UpgradeButtons";
 import { Button } from "@/components/ui/button";
-import type { PlanInterval } from "@/lib/stripe";
 
 export function BillingSection({ isPro }: { isPro: boolean }) {
-  const [loading, setLoading] = useState<PlanInterval | "portal" | null>(null);
-
-  async function upgrade(interval: PlanInterval) {
-    setLoading(interval);
-    const result = await createCheckoutSession(interval);
-    if (!result.success) {
-      toast.error(result.error);
-      setLoading(null);
-      return;
-    }
-    window.location.href = result.url;
-  }
+  const [loading, setLoading] = useState<"portal" | null>(null);
 
   async function manage() {
     setLoading("portal");
@@ -52,18 +41,7 @@ export function BillingSection({ isPro }: { isPro: boolean }) {
         You&apos;re on the Free plan. Upgrade for unlimited items, collections,
         files, images, and AI features.
       </p>
-      <div className="flex gap-2">
-        <Button onClick={() => upgrade("monthly")} disabled={loading !== null}>
-          {loading === "monthly" ? "Redirecting…" : "Upgrade — $8/mo"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => upgrade("yearly")}
-          disabled={loading !== null}
-        >
-          {loading === "yearly" ? "Redirecting…" : "Upgrade — $72/yr"}
-        </Button>
-      </div>
+      <UpgradeButtons />
     </div>
   );
 }
