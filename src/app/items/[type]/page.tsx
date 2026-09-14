@@ -7,10 +7,12 @@ import { FileListRow } from "@/components/items/FileListRow";
 import { ImageThumbnailCard } from "@/components/items/ImageThumbnailCard";
 import { ItemCard } from "@/components/items/ItemCard";
 import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
+import { ProUpgradePage } from "@/components/items/ProUpgradePage";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { getCollectionsForSelect } from "@/lib/db/collections";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import { getTotalPages, ITEMS_PER_PAGE, parsePage } from "@/lib/pagination";
+import { PRO_ONLY_ITEM_TYPES, isFeatureGatingEnabled } from "@/lib/plan-limits";
 
 export default async function ItemsByTypePage({
   params,
@@ -32,6 +34,34 @@ export default async function ItemsByTypePage({
   }
 
   const { type, items, totalCount } = result;
+
+  const isGated =
+    isFeatureGatingEnabled() &&
+    !session?.user?.isPro &&
+    PRO_ONLY_ITEM_TYPES.includes(type.name);
+
+  if (isGated) {
+    return (
+      <div className="mx-auto flex max-w-5xl flex-col gap-8">
+        <header className="flex flex-col gap-1">
+          <h1 className="flex items-center gap-2 font-heading text-3xl font-semibold">
+            <ItemTypeIcon type={type} className="size-6" />
+            {type.label}
+          </h1>
+        </header>
+
+        <ProUpgradePage type={type} />
+
+        <Link
+          href="/dashboard"
+          className="text-sm text-primary underline-offset-4 hover:underline"
+        >
+          Back to dashboard
+        </Link>
+      </div>
+    );
+  }
+
   const totalPages = getTotalPages(totalCount, ITEMS_PER_PAGE);
 
   if (totalCount > 0 && page > totalPages) {
