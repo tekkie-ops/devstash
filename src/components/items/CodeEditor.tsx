@@ -9,6 +9,7 @@ import type { BeforeMount, OnChange, OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
 import { useEditorPreferences } from "@/components/settings/EditorPreferencesContext";
+import { toMonacoLanguage } from "@/lib/languages";
 import type { EditorPreferences } from "@/lib/validations/editor-preferences";
 
 /**
@@ -113,31 +114,6 @@ function defineThemes(monaco: Parameters<BeforeMount>[0]) {
       "scrollbarSlider.activeBackground": "#ffffff4d",
     },
   });
-}
-
-/** Common shorthands → Monaco language ids. Unknown ids fall back to plaintext. */
-const LANGUAGE_ALIASES: Record<string, string> = {
-  ts: "typescript",
-  tsx: "typescript",
-  js: "javascript",
-  jsx: "javascript",
-  sh: "shell",
-  bash: "shell",
-  zsh: "shell",
-  py: "python",
-  rb: "ruby",
-  yml: "yaml",
-  md: "markdown",
-  "c++": "cpp",
-  "c#": "csharp",
-  cs: "csharp",
-  golang: "go",
-};
-
-function toMonacoLanguage(language: string | null | undefined): string {
-  const key = language?.trim().toLowerCase();
-  if (!key) return "plaintext";
-  return LANGUAGE_ALIASES[key] ?? key;
 }
 
 interface CodeEditorProps {

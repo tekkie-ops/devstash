@@ -2,6 +2,7 @@ import { CodeEditor } from "@/components/items/CodeEditor";
 import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
 import { Section } from "@/components/items/ItemDetailSection";
 import { Field } from "@/components/items/ItemFormField";
+import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,6 +81,16 @@ export function EditForm({
         />
       </Field>
 
+      {showLanguage && (
+        <Field label="Language" htmlFor="item-language">
+          <LanguageSelect
+            id="item-language"
+            value={language}
+            onChange={onLanguageChange}
+          />
+        </Field>
+      )}
+
       {showContent &&
         (showCode ? (
           <Field label="Content">
@@ -104,17 +115,6 @@ export function EditForm({
             />
           </Field>
         ))}
-
-      {showLanguage && (
-        <Field label="Language" htmlFor="item-language">
-          <Input
-            id="item-language"
-            value={language}
-            onChange={(event) => onLanguageChange(event.target.value)}
-            placeholder="e.g. typescript"
-          />
-        </Field>
-      )}
 
       {showUrl && (
         <Field label="URL" htmlFor="item-url">

@@ -11,6 +11,7 @@ import { CodeEditor } from "@/components/items/CodeEditor";
 import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
 import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
 import { Field } from "@/components/items/ItemFormField";
+import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
 import { Button } from "@/components/ui/button";
 import {
@@ -200,6 +201,16 @@ export function CreateItemDialog({
               />
             </Field>
 
+            {showLanguage && (
+              <Field label="Language" htmlFor="create-item-language">
+                <LanguageSelect
+                  id="create-item-language"
+                  value={language}
+                  onChange={setLanguage}
+                />
+              </Field>
+            )}
+
             {showContent &&
               (showCode ? (
                 <Field label="Content">
@@ -232,17 +243,6 @@ export function CreateItemDialog({
                   value={uploadedFile}
                   onChange={setUploadedFile}
                   onUploadingChange={setUploading}
-                />
-              </Field>
-            )}
-
-            {showLanguage && (
-              <Field label="Language" htmlFor="create-item-language">
-                <Input
-                  id="create-item-language"
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value)}
-                  placeholder="e.g. typescript"
                 />
               </Field>
             )}

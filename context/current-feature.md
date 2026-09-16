@@ -1,16 +1,21 @@
-# Current Feature
+# Current Feature: Language Dropdown for Code Items
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+Complete
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Replace the free-text "Language" `Input` with a `Select` dropdown (a fixed list of supported languages) in both the New Item dialog (`CreateItemDialog.tsx`) and the item drawer's edit form (`ItemDrawerEditForm.tsx`)
+- Move the Language field above the Content field for code types (snippet, command) in both places, so language is chosen before/while typing code
+- Selecting a language continues to drive Monaco's live syntax highlighting via `CodeEditor`'s existing `language` prop (already reactive — no CodeEditor change needed for this)
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Scope is limited to `snippet`/`command` (`LANGUAGE_TYPES`/`CODE_TYPES` in `src/lib/item-types.ts`) — the only types showing the Language field and the Monaco editor.
+- The dropdown's option list should cover `CodeEditor.tsx`'s `LANGUAGE_ALIASES` map plus the common languages already used as Monaco ids (typescript, javascript, python, etc.) so highlighting is meaningful for anything selectable.
+- `language` stays a plain string end-to-end (Zod schema, DB column, server action) — this is a UI-only change to how it's edited, not a schema/validation change.
+- No DB migration, no new server action, no new validation logic — out of Vitest's scope (component-only change), so no new unit tests expected.
 
 ## History
 
