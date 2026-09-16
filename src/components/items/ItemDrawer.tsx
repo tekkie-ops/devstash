@@ -27,6 +27,7 @@ import {
   LANGUAGE_TYPES,
   MARKDOWN_TYPES,
 } from "@/lib/item-types";
+import { normalizeLanguageValue } from "@/lib/languages";
 
 interface ItemDrawerProps {
   open: boolean;
@@ -123,7 +124,9 @@ function ItemDrawerContent({
   const [title, setTitle] = useState(detail.title);
   const [description, setDescription] = useState(detail.description ?? "");
   const [content, setContent] = useState(detail.content ?? "");
-  const [language, setLanguage] = useState(detail.language ?? "");
+  const [language, setLanguage] = useState(
+    normalizeLanguageValue(detail.language),
+  );
   const [url, setUrl] = useState(detail.url ?? "");
   const [tagsInput, setTagsInput] = useState(detail.tags.join(", "));
   const [collectionIds, setCollectionIds] = useState(
@@ -134,7 +137,7 @@ function ItemDrawerContent({
     setTitle(detail.title);
     setDescription(detail.description ?? "");
     setContent(detail.content ?? "");
-    setLanguage(detail.language ?? "");
+    setLanguage(normalizeLanguageValue(detail.language));
     setUrl(detail.url ?? "");
     setTagsInput(detail.tags.join(", "));
     setCollectionIds(detail.collections.map((collection) => collection.id));
