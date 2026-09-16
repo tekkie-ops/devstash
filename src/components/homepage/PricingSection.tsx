@@ -9,22 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { FREE_FEATURES, PRO_FEATURES } from "@/lib/pricing-features";
 import { cn } from "@/lib/utils";
-
-const FREE_FEATURES = [
-  "50 items total",
-  "3 collections",
-  "All types except Files & Images",
-  "Basic search",
-];
-
-const PRO_FEATURES = [
-  "Unlimited items & collections",
-  "File & image uploads",
-  "AI auto-tagging & summaries",
-  "Prompt optimizer",
-  "Priority support",
-];
 
 export function PricingSection() {
   const [yearly, setYearly] = useState(false);

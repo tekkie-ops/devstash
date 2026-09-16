@@ -20,5 +20,6 @@ export const config = {
     "/collections/:path*",
     "/settings/:path*",
     "/favorites/:path*",
+    "/upgrade/:path*",
   ],
 };

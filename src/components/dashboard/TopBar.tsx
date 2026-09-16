@@ -26,6 +26,11 @@ export async function TopBar() {
       <SearchTrigger />
 
       <div className="ml-auto flex items-center gap-2">
+        {!session?.user?.isPro && (
+          <Button size="sm" asChild>
+            <Link href="/upgrade">Upgrade</Link>
+          </Button>
+        )}
         <Button variant="ghost" size="icon" asChild>
           <Link href="/favorites" aria-label="Favorites">
             <Star className="size-4" />

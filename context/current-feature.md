@@ -1,16 +1,23 @@
-# Current Feature
+# Current Feature: Upgrade Page & Header Upgrade Button
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add an "Upgrade" button to the dashboard header (`TopBar.tsx`), shown only to signed-in free users (`!session.user.isPro`), linking to a new `/upgrade` page.
+- Build `/upgrade`: a protected page presenting the Free vs Pro plans much like the homepage's pricing section, with a monthly ($8) / yearly ($72) toggle, and a single "Upgrade" CTA that starts Stripe Checkout for whichever interval is selected (reusing the existing `createCheckoutSession` server action — no new billing logic).
+- Change the Files/Images gate in `/items/[type]` (`src/app/items/[type]/page.tsx`) so a gated visit (`isFeatureGatingEnabled() && !session.user.isPro && PRO_ONLY_ITEM_TYPES.includes(type.name)`) redirects to `/upgrade` instead of rendering the inline `ProUpgradePage` upgrade prompt.
+- Remove `ProUpgradePage.tsx` once nothing renders it.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- No new Stripe/checkout logic — reuse `createCheckoutSession(interval)` from `src/actions/billing.ts` (already redirects to Stripe Checkout, success/cancel URLs land on `/settings`).
+- Extract the `FREE_FEATURES`/`PRO_FEATURES` arrays out of `src/components/homepage/PricingSection.tsx` into a shared `src/lib/pricing-features.ts` so the homepage and `/upgrade` don't duplicate the feature-list copy.
+- `/upgrade` should redirect an already-Pro user to `/settings` (nothing to upgrade there).
+- Add `/upgrade/:path*` to `src/proxy.ts`'s matcher, protected like the other app pages (`/dashboard`, `/items`, `/settings`, etc.).
+- `UpgradeButtons` (the two-button variant used by Settings' `BillingSection`) stays as-is — only the `/upgrade` page gets the toggle-based single-CTA treatment, matching the homepage pricing UI the user asked for.
 
 ## History
 
