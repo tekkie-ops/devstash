@@ -65,7 +65,10 @@ export default async function ItemsByTypePage({
       </header>
 
       {items.length > 0 ? (
-        <ItemDrawerProvider availableCollections={availableCollections}>
+        <ItemDrawerProvider
+          availableCollections={availableCollections}
+          isPro={session?.user?.isPro ?? false}
+        >
           {isFileType ? (
             <div className="divide-y overflow-hidden rounded-xl border bg-card">
               {items.map((item) => (

@@ -37,7 +37,11 @@ export async function TopBar() {
           </Link>
         </Button>
         <CreateCollectionDialog />
-        <CreateItemDialog types={itemTypes} collections={collections} />
+        <CreateItemDialog
+          types={itemTypes}
+          collections={collections}
+          isPro={session?.user?.isPro ?? false}
+        />
       </div>
     </header>
   );

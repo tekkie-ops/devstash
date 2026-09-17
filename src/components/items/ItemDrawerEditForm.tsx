@@ -4,6 +4,7 @@ import { Section } from "@/components/items/ItemDetailSection";
 import { Field } from "@/components/items/ItemFormField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
+import { SuggestTagsButton } from "@/components/items/SuggestTagsButton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatLongDate } from "@/lib/dashboard";
@@ -24,9 +25,11 @@ interface EditFormProps {
   onUrlChange: (value: string) => void;
   tagsInput: string;
   onTagsInputChange: (value: string) => void;
+  onAddTag: (tag: string) => void;
   collectionIds: string[];
   onCollectionIdsChange: (ids: string[]) => void;
   availableCollections: CollectionOption[];
+  isPro: boolean;
   showContent: boolean;
   showCode: boolean;
   showMarkdown: boolean;
@@ -52,9 +55,11 @@ export function EditForm({
   onUrlChange,
   tagsInput,
   onTagsInputChange,
+  onAddTag,
   collectionIds,
   onCollectionIdsChange,
   availableCollections,
+  isPro,
   showContent,
   showCode,
   showMarkdown,
@@ -138,6 +143,18 @@ export function EditForm({
         <p className="text-xs text-muted-foreground">
           Separate tags with commas.
         </p>
+        {isPro && (
+          <SuggestTagsButton
+            title={title}
+            description={description}
+            content={content}
+            existingTags={tagsInput
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean)}
+            onAcceptTag={onAddTag}
+          />
+        )}
       </Field>
 
       <Field label="Collections">

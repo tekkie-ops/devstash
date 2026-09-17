@@ -1,16 +1,40 @@
-# Current Feature
+# Current Feature: AI Auto-Tagging
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Create an OpenAI client utility with an `AI_MODEL` constant (skip if a prior AI feature already created it)
+- Add a `generateAutoTags` server action with auth check, Pro gating, Zod validation, and rate limiting
+- Add AI rate limit config (20 requests/hour per user) to the existing rate-limit utility (skip if already added)
+- Add a "Suggest Tags" button (Sparkles icon, ghost variant) near the tags input in both the create item dialog and the item drawer's edit mode
+- Show suggested tags as badges, each with accept (check) and reject (X) controls
+- Accepted suggestions get added to the item's tag list; tags stay freeform (not limited to existing DB tags)
+- Truncate item content to 2000 chars before sending to the API
+- Hide the Suggest Tags button entirely for free users (Pro-only UI gating), in addition to server-side gating
+- Surface Pro-gating / rate-limit / AI-service errors via toast
+- Follow existing codebase patterns
+- Add unit tests for the new server action
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Pro-only feature (both UI-level and server-side gating required)
+- If this is the first AI feature implemented, it also establishes the OpenAI foundation (client, server action, rate-limit config) that later AI features will reuse
+- `OPENAI_API_KEY` is already set in `.env`
+- `isPro` is available server-side via the session but is not currently passed into the create/edit UI components — server-side gating handles enforcement; UI gating (hiding the button) needs `isPro` passed as a prop or fetched client-side
+- See `docs/ai-integration-plan.md` for full architectural context
+
+### CRITICAL: OpenAI SDK & gpt-5-nano gotchas
+
+- The `openai` npm package v6+ has two different APIs. **gpt-5-nano does NOT work with the Chat Completions API** (returns empty content) — **must use the Responses API** (`client.responses.create(...)`, reading `response.output_text`).
+- Do not use `zodResponseFormat` structured output with this model — it consumes excessive tokens and hits length limits. Use `text: { format: { type: 'json_object' } }` and parse the JSON manually.
+- The model may return `{"tags": ["a", "b"]}` OR a bare `["a", "b"]` array — handle both shapes.
+- Always normalize tags to lowercase after receiving them.
+- `max_tokens` is not supported by gpt-5-nano (irrelevant anyway since we use the Responses API, not Chat Completions).
+
+Full spec: `context/features/ai-auto-tag-spec.md`
 
 ## History
 
