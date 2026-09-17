@@ -1,16 +1,31 @@
-# Current Feature
+# Current Feature: AI Explain Code
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Create an `explainCode` server action with auth, Pro gating, Zod validation, and rate limiting
+- Add an "Explain" button (Sparkles icon) to the code editor's window-controls header, next to Copy
+- Only show the Explain button for `snippet` and `command` types, and only in the item drawer's read view (not create/edit forms)
+- After generating, show Code/Explain tabs in the editor header to toggle between the two views
+- Render the explanation as markdown, in the same container space the code editor occupies
+- Explanation should be concise (~200-300 words), covering what the code does and key concepts
+- Show a Loader2 spinner while generating
+- Gate in the UI for free users with a Crown icon + tooltip ("AI features require Pro subscription")
+- Surface errors (Pro gating, rate limit, AI service errors) via the existing toast pattern
+- Follow existing patterns established by the AI Auto-Tagging and AI-Generated Descriptions features
+- Add unit tests for the server action
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Uses the existing OpenAI foundation (`src/lib/openai.ts`'s lazy singleton, `AI_MODEL`, `isOpenAIConfigured()`) and the six-step server-action shape (auth → Zod validation → `isOpenAIConfigured()` → Pro gate via fresh `prisma.user.findUnique` → rate limit → OpenAI call) used by `generateAutoTags`/`generateDescription`
+- Explanations are not persisted to the database — regenerated on every click
+- Not available in create/edit forms, only in the item drawer's read view
+- `isPro` needs to be threaded as a prop into the item drawer / code editor
+- Full architectural context: `docs/ai-integration-plan.md`
+- Spec: @context/features/ai-explain-spec.md
 
 ## History
 

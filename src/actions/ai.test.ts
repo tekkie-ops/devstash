@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { generateAutoTags, generateDescription } from "@/actions/ai";
+import { explainCode, generateAutoTags, generateDescription } from "@/actions/ai";
 
 const { authMock, findUniqueMock, isOpenAIConfiguredMock, responsesCreateMock } =
   vi.hoisted(() => ({
@@ -342,6 +342,141 @@ describe("generateDescription", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await generateDescription(validDescriptionInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Something went wrong. Please try again.",
+    });
+  });
+});
+
+const validExplainInput = {
+  content: "export function useDebounce(value, delay) { /* ... */ }",
+  language: "typescript",
+};
+
+describe("explainCode", () => {
+  it("rejects an unauthenticated caller before touching OpenAI", async () => {
+    authMock.mockResolvedValue(null);
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "You must be signed in to do that",
+    });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Zod message when content is blank", async () => {
+    const result = await explainCode({ ...validExplainInput, content: "  " });
+
+    expect(result).toEqual({ success: false, error: "Content is required" });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects when OpenAI isn't configured", async () => {
+    isOpenAIConfiguredMock.mockReturnValue(false);
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "AI features are not configured",
+    });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a free user when feature gating is enabled", async () => {
+    process.env.FEATURE_GATING_ENABLED = "true";
+    findUniqueMock.mockResolvedValue({ isPro: false });
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "AI features are a Pro feature. Upgrade to Pro to use them.",
+    });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("allows a Pro user through when feature gating is enabled", async () => {
+    process.env.FEATURE_GATING_ENABLED = "true";
+    findUniqueMock.mockResolvedValue({ isPro: true });
+    responsesCreateMock.mockResolvedValue({
+      output_text: "This debounces a value by delaying updates.",
+    });
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: true,
+      data: { explanation: "This debounces a value by delaying updates." },
+    });
+  });
+
+  it("trims whitespace from the model's response", async () => {
+    responsesCreateMock.mockResolvedValue({
+      output_text: "  A trimmed explanation.  \n",
+    });
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: true,
+      data: { explanation: "A trimmed explanation." },
+    });
+  });
+
+  it("truncates an overly long response", async () => {
+    responsesCreateMock.mockResolvedValue({
+      output_text: "x".repeat(3000),
+    });
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.explanation.length).toBe(2500);
+    }
+  });
+
+  it("truncates content before sending it to OpenAI", async () => {
+    responsesCreateMock.mockResolvedValue({ output_text: "An explanation." });
+
+    await explainCode({ ...validExplainInput, content: "x".repeat(3000) });
+
+    const call = responsesCreateMock.mock.calls[0][0];
+    expect(call.input).toContain("(truncated)");
+    expect(call.input.length).toBeLessThan(2500);
+  });
+
+  it("omits the language section when blank", async () => {
+    responsesCreateMock.mockResolvedValue({ output_text: "An explanation." });
+
+    await explainCode({ content: "echo hi", language: "" });
+
+    const call = responsesCreateMock.mock.calls[0][0];
+    expect(call.input).not.toContain("<language>");
+  });
+
+  it("fails soft when the model returns an empty response", async () => {
+    responsesCreateMock.mockResolvedValue({ output_text: "   " });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Something went wrong. Please try again.",
+    });
+  });
+
+  it("fails soft when the OpenAI SDK throws", async () => {
+    responsesCreateMock.mockRejectedValue(new Error("openai down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await explainCode(validExplainInput);
 
     expect(result).toEqual({
       success: false,

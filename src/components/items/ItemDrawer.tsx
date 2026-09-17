@@ -255,7 +255,7 @@ function ItemDrawerContent({
 
       <div className="flex-1 overflow-y-auto p-6">
         {mode === "view" ? (
-          <ItemDrawerBody detail={detail} />
+          <ItemDrawerBody detail={detail} isPro={isPro} />
         ) : (
           <EditForm
             detail={detail}

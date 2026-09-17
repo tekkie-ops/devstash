@@ -2,14 +2,24 @@
 
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Copy } from "lucide-react";
+import { Copy, Crown, Loader2, Sparkles } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 
 import type { BeforeMount, OnChange, OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
+import { explainCode } from "@/actions/ai";
 import { useEditorPreferences } from "@/components/settings/EditorPreferencesContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toMonacoLanguage } from "@/lib/languages";
+import { cn } from "@/lib/utils";
 import type { EditorPreferences } from "@/lib/validations/editor-preferences";
 
 /**
@@ -122,6 +132,14 @@ interface CodeEditorProps {
   /** Omit for a read-only (display) editor. */
   onChange?: (value: string) => void;
   readOnly?: boolean;
+  /**
+   * Shows the Pro-gated "Explain" trigger and, once generated, Code/Explain
+   * tabs. Only passed by the item drawer's read-only view — not the create
+   * dialog or edit form.
+   */
+  explainable?: boolean;
+  /** Whether the signed-in user can actually use Explain (UI-only gate; the server action re-checks). */
+  isPro?: boolean;
 }
 
 export function CodeEditor({
@@ -129,23 +147,44 @@ export function CodeEditor({
   language,
   onChange,
   readOnly = false,
+  explainable = false,
+  isPro = false,
 }: CodeEditorProps) {
   const { preferences } = useEditorPreferences();
   const [height, setHeight] = useState(MIN_HEIGHT);
+  const [view, setView] = useState<"code" | "explain">("code");
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [explaining, setExplaining] = useState(false);
 
   const displayLanguage = language?.trim() || null;
   const monacoLanguage = toMonacoLanguage(language);
 
   const handleCopy = useCallback(() => {
-    if (!value) {
+    const textToCopy = view === "explain" && explanation ? explanation : value;
+    if (!textToCopy) {
       toast.error("Nothing to copy");
       return;
     }
     void navigator.clipboard
-      .writeText(value)
+      .writeText(textToCopy)
       .then(() => toast.success("Copied to clipboard"))
       .catch(() => toast.error("Couldn't copy to clipboard"));
-  }, [value]);
+  }, [view, explanation, value]);
+
+  const handleExplain = useCallback(async () => {
+    if (explaining || !value.trim()) return;
+    setExplaining(true);
+    const result = await explainCode({ content: value, language });
+    setExplaining(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    setExplanation(result.data.explanation);
+    setView("explain");
+  }, [explaining, value, language]);
 
   const handleChange = useCallback<OnChange>(
     (next) => onChange?.(next ?? ""),
@@ -203,10 +242,27 @@ export function CodeEditor({
           <span className="size-3 rounded-full bg-[#28c840]" />
         </div>
         <div className="ml-auto flex items-center gap-2.5">
-          {displayLanguage && (
-            <span className="font-mono text-xs text-muted-foreground">
-              {displayLanguage}
-            </span>
+          {explanation ? (
+            <div className="flex items-center gap-1">
+              <ViewTabButton
+                active={view === "code"}
+                onClick={() => setView("code")}
+              >
+                Code
+              </ViewTabButton>
+              <ViewTabButton
+                active={view === "explain"}
+                onClick={() => setView("explain")}
+              >
+                Explain
+              </ViewTabButton>
+            </div>
+          ) : (
+            displayLanguage && (
+              <span className="font-mono text-xs text-muted-foreground">
+                {displayLanguage}
+              </span>
+            )
           )}
           <button
             type="button"
@@ -216,21 +272,96 @@ export function CodeEditor({
             <Copy className="size-3.5" />
             Copy
           </button>
+          {explainable &&
+            (isPro ? (
+              <button
+                type="button"
+                onClick={handleExplain}
+                disabled={explaining || !value.trim()}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+              >
+                {explaining ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="size-3.5" />
+                )}
+                {explaining ? "Explaining…" : "Explain"}
+              </button>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {/* aria-disabled, not the disabled attribute — a natively
+                        disabled button fires no pointer/focus events, so the
+                        tooltip would never open. There's no onClick handler
+                        here regardless, so it's already inert either way. */}
+                    <button
+                      type="button"
+                      aria-disabled="true"
+                      className="inline-flex cursor-not-allowed items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground opacity-70"
+                    >
+                      <Crown className="size-3.5" />
+                      Explain
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    AI features require Pro subscription
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
         </div>
       </div>
 
-      <MonacoEditor
-        height={height}
-        theme={MONACO_THEME_NAMES[preferences.theme]}
-        language={monacoLanguage}
-        value={value}
-        onChange={readOnly ? undefined : handleChange}
-        beforeMount={handleBeforeMount}
-        onMount={handleMount}
-        options={options}
-        loading={<EditorLoading />}
-      />
+      {view === "explain" && explanation ? (
+        <div
+          className="markdown-preview max-h-[400px] overflow-y-auto bg-[#0d0d0d] px-4 py-3"
+          style={{ minHeight: height }}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {explanation}
+          </ReactMarkdown>
+        </div>
+      ) : (
+        <MonacoEditor
+          height={height}
+          theme={MONACO_THEME_NAMES[preferences.theme]}
+          language={monacoLanguage}
+          value={value}
+          onChange={readOnly ? undefined : handleChange}
+          beforeMount={handleBeforeMount}
+          onMount={handleMount}
+          options={options}
+          loading={<EditorLoading />}
+        />
+      )}
     </div>
+  );
+}
+
+function ViewTabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+        active
+          ? "bg-white/10 text-foreground"
+          : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
