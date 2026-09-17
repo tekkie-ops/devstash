@@ -14,9 +14,14 @@ import { formatFileSize } from "@/lib/upload";
 export function ItemDrawerBody({
   detail,
   isPro,
+  onAcceptOptimizedPrompt,
 }: {
   detail: ItemDetail;
   isPro: boolean;
+  /** Called with the optimized text when the user accepts an "Optimize" suggestion; persists it. */
+  onAcceptOptimizedPrompt: (
+    optimized: string,
+  ) => boolean | Promise<boolean>;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -26,7 +31,11 @@ export function ItemDrawerBody({
         </Section>
       )}
 
-      <ContentSection detail={detail} isPro={isPro} />
+      <ContentSection
+        detail={detail}
+        isPro={isPro}
+        onAcceptOptimizedPrompt={onAcceptOptimizedPrompt}
+      />
 
       {detail.tags.length > 0 && (
         <Section title="Tags">
@@ -71,9 +80,13 @@ export function ItemDrawerBody({
 function ContentSection({
   detail,
   isPro,
+  onAcceptOptimizedPrompt,
 }: {
   detail: ItemDetail;
   isPro: boolean;
+  onAcceptOptimizedPrompt: (
+    optimized: string,
+  ) => boolean | Promise<boolean>;
 }) {
   if (detail.contentType === "file") {
     return <FileSection detail={detail} />;
@@ -106,7 +119,13 @@ function ContentSection({
             isPro={isPro}
           />
         ) : MARKDOWN_TYPES.includes(detail.type.name) ? (
-          <MarkdownEditor value={detail.content} readOnly />
+          <MarkdownEditor
+            value={detail.content}
+            readOnly
+            optimizable={detail.type.name === "prompt"}
+            isPro={isPro}
+            onAcceptOptimized={onAcceptOptimizedPrompt}
+          />
         ) : (
           <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
             {detail.content}

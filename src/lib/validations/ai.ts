@@ -72,3 +72,13 @@ export const explainCodeSchema = z.object({
 });
 
 export type ExplainCodeInput = z.infer<typeof explainCodeSchema>;
+
+/**
+ * Input accepted by `optimizePrompt`. Only used for `prompt`-type items from
+ * the item drawer's read view, so content is always present.
+ */
+export const optimizePromptSchema = z.object({
+  content: z.string().trim().min(1, "Content is required"),
+});
+
+export type OptimizePromptInput = z.infer<typeof optimizePromptSchema>;

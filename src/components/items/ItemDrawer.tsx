@@ -201,6 +201,33 @@ function ItemDrawerContent({
 
   const canSave = title.trim().length > 0 && !saving;
 
+  /**
+   * Persists an accepted "Optimize" suggestion for `prompt`-type items —
+   * called from view mode (the edit form is never entered), so it builds the
+   * payload from `detail` directly rather than the edit form's local state.
+   */
+  async function handleAcceptOptimizedPrompt(optimized: string) {
+    const result = await updateItem(detail.id, {
+      title: detail.title,
+      description: detail.description ?? "",
+      content: optimized,
+      url: null,
+      language: null,
+      tags: detail.tags,
+      collectionIds: detail.collections.map((collection) => collection.id),
+    });
+
+    if (!result.success) {
+      toast.error(result.error);
+      return false;
+    }
+
+    onSaved(result.data);
+    toast.success("Prompt updated");
+    router.refresh();
+    return true;
+  }
+
   return (
     <>
       <SheetHeader className="gap-3 border-b p-6 pr-14">
@@ -255,7 +282,11 @@ function ItemDrawerContent({
 
       <div className="flex-1 overflow-y-auto p-6">
         {mode === "view" ? (
-          <ItemDrawerBody detail={detail} isPro={isPro} />
+          <ItemDrawerBody
+            detail={detail}
+            isPro={isPro}
+            onAcceptOptimizedPrompt={handleAcceptOptimizedPrompt}
+          />
         ) : (
           <EditForm
             detail={detail}
