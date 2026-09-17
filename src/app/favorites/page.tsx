@@ -42,7 +42,10 @@ export default async function FavoritesPage() {
           No favorites yet. Star an item or collection to see it here.
         </p>
       ) : (
-        <ItemDrawerProvider availableCollections={availableCollections}>
+        <ItemDrawerProvider
+          availableCollections={availableCollections}
+          isPro={session?.user?.isPro ?? false}
+        >
           <FavoriteItemsSection items={items} />
           <FavoriteCollectionsSection collections={collections} />
         </ItemDrawerProvider>

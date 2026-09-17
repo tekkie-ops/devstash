@@ -34,3 +34,7 @@ export function collectionLimitMessage(): string {
 export function proTypeMessage(): string {
   return "Files and images are a Pro feature. Upgrade to Pro to upload them.";
 }
+
+export function aiFeatureMessage(): string {
+  return "AI features are a Pro feature. Upgrade to Pro to use them.";
+}

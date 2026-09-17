@@ -37,6 +37,8 @@ interface ItemDrawerProps {
   error: string | null;
   /** The signed-in user's collections, for the edit form's collection picker. */
   availableCollections: CollectionOption[];
+  /** Gates the edit form's "Suggest tags" button (UI-only; the server action re-checks). */
+  isPro: boolean;
   /** Called with the refreshed detail after a successful save. */
   onSaved: (detail: ItemDetail) => void;
   /** Called after a successful delete — closes the drawer and clears detail. */
@@ -54,6 +56,7 @@ export function ItemDrawer({
   loading,
   error,
   availableCollections,
+  isPro,
   onSaved,
   onDeleted,
   onFavorited,
@@ -79,6 +82,7 @@ export function ItemDrawer({
             key={detail.id}
             detail={detail}
             availableCollections={availableCollections}
+            isPro={isPro}
             onSaved={onSaved}
             onDeleted={onDeleted}
             onFavorited={onFavorited}
@@ -98,6 +102,7 @@ export function ItemDrawer({
 function ItemDrawerContent({
   detail,
   availableCollections,
+  isPro,
   onSaved,
   onDeleted,
   onFavorited,
@@ -105,6 +110,7 @@ function ItemDrawerContent({
 }: {
   detail: ItemDetail;
   availableCollections: CollectionOption[];
+  isPro: boolean;
   onSaved: (detail: ItemDetail) => void;
   onDeleted: () => void;
   onFavorited: (detail: ItemDetail) => void;
@@ -151,6 +157,19 @@ function ItemDrawerContent({
   function cancelEditing() {
     seedFromDetail();
     setMode("view");
+  }
+
+  function addTag(tag: string) {
+    setTagsInput((prev) => {
+      const tags = prev
+        .split(",")
+        .map((existing) => existing.trim())
+        .filter(Boolean);
+      if (tags.some((existing) => existing.toLowerCase() === tag.toLowerCase())) {
+        return prev;
+      }
+      return [...tags, tag].join(", ");
+    });
   }
 
   async function handleSave() {
@@ -252,9 +271,11 @@ function ItemDrawerContent({
             onUrlChange={setUrl}
             tagsInput={tagsInput}
             onTagsInputChange={setTagsInput}
+            onAddTag={addTag}
             collectionIds={collectionIds}
             onCollectionIdsChange={setCollectionIds}
             availableCollections={availableCollections}
+            isPro={isPro}
             showContent={showContent}
             showCode={showCode}
             showMarkdown={showMarkdown}

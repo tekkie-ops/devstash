@@ -38,9 +38,12 @@ export function useItemDrawer(): ItemDrawerContextValue {
 export function ItemDrawerProvider({
   children,
   availableCollections,
+  isPro,
 }: {
   children: ReactNode;
   availableCollections: CollectionOption[];
+  /** Gates the drawer edit form's "Suggest tags" button (UI-only; the server action re-checks). */
+  isPro: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
@@ -96,6 +99,7 @@ export function ItemDrawerProvider({
         loading={loading}
         error={error}
         availableCollections={availableCollections}
+        isPro={isPro}
         onSaved={setDetail}
         onDeleted={handleDeleted}
         onFavorited={setDetail}

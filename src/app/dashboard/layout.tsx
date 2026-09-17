@@ -29,7 +29,10 @@ export default async function DashboardLayout({
   return (
     <TooltipProvider>
       <SidebarProvider className="min-h-0 flex-1">
-        <ItemDrawerProvider availableCollections={availableCollections}>
+        <ItemDrawerProvider
+          availableCollections={availableCollections}
+          isPro={session?.user?.isPro ?? false}
+        >
           <SearchProvider items={searchableItems} collections={searchableCollections}>
             <Sidebar />
             <SidebarInset className="min-h-0 overflow-hidden">

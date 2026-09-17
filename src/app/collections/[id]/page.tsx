@@ -62,7 +62,10 @@ export default async function CollectionDetailPage({
       </header>
 
       {items.length > 0 ? (
-        <ItemDrawerProvider availableCollections={availableCollections}>
+        <ItemDrawerProvider
+          availableCollections={availableCollections}
+          isPro={session?.user?.isPro ?? false}
+        >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <ItemCard key={item.id} item={item} />

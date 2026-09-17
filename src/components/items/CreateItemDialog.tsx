@@ -13,6 +13,7 @@ import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
 import { Field } from "@/components/items/ItemFormField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
+import { SuggestTagsButton } from "@/components/items/SuggestTagsButton";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,9 +47,11 @@ import { FILE_ITEM_TYPES } from "@/lib/validations/items";
 export function CreateItemDialog({
   types,
   collections,
+  isPro,
 }: {
   types: CollectionItemType[];
   collections: CollectionOption[];
+  isPro: boolean;
 }) {
   const router = useRouter();
   const fallbackType = types[0]?.name ?? "snippet";
@@ -91,6 +94,19 @@ export function CreateItemDialog({
     setTypeName(name);
     setUploadedFile(null);
     setUploading(false);
+  }
+
+  function addTag(tag: string) {
+    setTagsInput((prev) => {
+      const tags = prev
+        .split(",")
+        .map((existing) => existing.trim())
+        .filter(Boolean);
+      if (tags.some((existing) => existing.toLowerCase() === tag.toLowerCase())) {
+        return prev;
+      }
+      return [...tags, tag].join(", ");
+    });
   }
 
   function handleOpenChange(next: boolean) {
@@ -270,6 +286,18 @@ export function CreateItemDialog({
               <p className="text-xs text-muted-foreground">
                 Separate tags with commas.
               </p>
+              {isPro && (
+                <SuggestTagsButton
+                  title={title}
+                  description={description}
+                  content={content}
+                  existingTags={tagsInput
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean)}
+                  onAcceptTag={addTag}
+                />
+              )}
             </Field>
 
             <Field label="Collections">
