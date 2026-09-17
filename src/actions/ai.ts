@@ -106,11 +106,16 @@ async function requestTagSuggestions({
 
   // Responses API, not Chat Completions — gpt-5-nano returns empty content
   // on the latter. text.format (not response_format) requests JSON back.
+  // reasoning.effort must be capped low: gpt-5-nano otherwise spends the
+  // entire max_output_tokens budget on invisible reasoning tokens, leaving
+  // output_text empty (status "incomplete", reason "max_output_tokens") —
+  // confirmed against the real API, not just a docs claim.
   const response = await openaiClient().responses.create({
     model: AI_MODEL,
     instructions: SYSTEM_PROMPT,
     input: sections.join("\n\n"),
     text: { format: { type: "json_object" } },
+    reasoning: { effort: "minimal" },
     max_output_tokens: 150,
   });
 
