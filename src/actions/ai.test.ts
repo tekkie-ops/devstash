@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { explainCode, generateAutoTags, generateDescription } from "@/actions/ai";
+import {
+  explainCode,
+  generateAutoTags,
+  generateDescription,
+  optimizePrompt,
+} from "@/actions/ai";
 
 const { authMock, findUniqueMock, isOpenAIConfiguredMock, responsesCreateMock } =
   vi.hoisted(() => ({
@@ -477,6 +482,133 @@ describe("explainCode", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await explainCode(validExplainInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Something went wrong. Please try again.",
+    });
+  });
+});
+
+const validOptimizeInput = {
+  content: "Write me something about dogs.",
+};
+
+describe("optimizePrompt", () => {
+  it("rejects an unauthenticated caller before touching OpenAI", async () => {
+    authMock.mockResolvedValue(null);
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "You must be signed in to do that",
+    });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Zod message when content is blank", async () => {
+    const result = await optimizePrompt({ content: "  " });
+
+    expect(result).toEqual({ success: false, error: "Content is required" });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects when OpenAI isn't configured", async () => {
+    isOpenAIConfiguredMock.mockReturnValue(false);
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "AI features are not configured",
+    });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a free user when feature gating is enabled", async () => {
+    process.env.FEATURE_GATING_ENABLED = "true";
+    findUniqueMock.mockResolvedValue({ isPro: false });
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "AI features are a Pro feature. Upgrade to Pro to use them.",
+    });
+    expect(responsesCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("allows a Pro user through when feature gating is enabled", async () => {
+    process.env.FEATURE_GATING_ENABLED = "true";
+    findUniqueMock.mockResolvedValue({ isPro: true });
+    responsesCreateMock.mockResolvedValue({
+      output_text: "Write a 200-word, warm and informative piece about dogs.",
+    });
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        optimized: "Write a 200-word, warm and informative piece about dogs.",
+      },
+    });
+  });
+
+  it("trims whitespace from the model's response", async () => {
+    responsesCreateMock.mockResolvedValue({
+      output_text: "  A refined prompt.  \n",
+    });
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result).toEqual({
+      success: true,
+      data: { optimized: "A refined prompt." },
+    });
+  });
+
+  it("truncates an overly long response", async () => {
+    responsesCreateMock.mockResolvedValue({
+      output_text: "x".repeat(5000),
+    });
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.optimized.length).toBe(4000);
+    }
+  });
+
+  it("truncates content before sending it to OpenAI", async () => {
+    responsesCreateMock.mockResolvedValue({ output_text: "A refined prompt." });
+
+    await optimizePrompt({ content: "x".repeat(3000) });
+
+    const call = responsesCreateMock.mock.calls[0][0];
+    expect(call.input).toContain("(truncated)");
+    expect(call.input.length).toBeLessThan(2500);
+  });
+
+  it("fails soft when the model returns an empty response", async () => {
+    responsesCreateMock.mockResolvedValue({ output_text: "   " });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await optimizePrompt(validOptimizeInput);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Something went wrong. Please try again.",
+    });
+  });
+
+  it("fails soft when the OpenAI SDK throws", async () => {
+    responsesCreateMock.mockRejectedValue(new Error("openai down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await optimizePrompt(validOptimizeInput);
 
     expect(result).toEqual({
       success: false,

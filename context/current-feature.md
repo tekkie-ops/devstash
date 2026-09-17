@@ -1,16 +1,26 @@
-# Current Feature
+# Current Feature: AI Prompt Optimizer
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- Add an "Optimize" trigger for `prompt`-type items only (not `note`, which shares the same `MarkdownEditor`) that sends the current prompt content to gpt-5-nano and gets back a refined/improved version.
+- The optimized version is a suggestion, not an auto-apply: present it to the user (e.g. a before/after or a preview) and let them explicitly choose to accept it (replacing the item's content) or discard it and keep the original.
+- Place the "Optimize" trigger in `MarkdownEditor.tsx`'s header, in the same position/style as `CodeEditor.tsx`'s "Explain" trigger (icon button next to Copy, `Loader2` spinner while running).
+- Pro-gated the same way as the other three AI features (Auto-Tagging, AI-Generated Descriptions, AI Explain Code): free users see the same disabled Crown + tooltip treatment `CodeEditor.tsx` uses, wired to `isPro`/`aria-disabled` (not the native `disabled` attribute, per the bug already fixed in AI Explain Code).
+- Fourth AI feature — reuse the existing OpenAI foundation as-is, no changes to `src/lib/openai.ts`.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- Existing AI features to mirror, all in `src/actions/ai.ts`: `generateAutoTags`, `generateDescription`, `explainCode`. Each follows the same six-step server-action shape: `auth()` gate → Zod validation (`src/lib/validations/ai.ts`) → `isOpenAIConfigured()` → Pro gate (`isFeatureGatingEnabled()` + a **fresh** `prisma.user.findUnique` read for `isPro`, never the session's claim) → `checkRateLimit("ai:<name>", userId, 20, "1 h")` (own bucket, e.g. `"ai:optimize"`) → the OpenAI `responses.create` call.
+- Must use the Responses API (`openaiClient().responses.create`), not Chat Completions — gpt-5-nano returns empty content on the latter (documented gotcha, hit for real during Auto-Tagging).
+- Must pass `reasoning: { effort: "minimal" }` — gpt-5-nano otherwise burns the whole `max_output_tokens` budget on invisible reasoning tokens and returns empty `output_text` (hit for real during Auto-Tagging's happy-path fix).
+- Truncate input content to `MAX_CONTENT_CHARS` (2000) before sending, matching the other three actions.
+- `MarkdownEditor.tsx` (`src/components/items/`) is the Write/Preview editor used for both `note` and `prompt`; `CodeEditor.tsx`'s `explainable`/`isPro` prop pattern (only passed by `ItemDrawerView.tsx`'s read-only `ContentSection`, so create/edit forms never show it) is the template to follow — but confirm whether Optimize should be view-only like Explain, or also need to work from edit mode, since "ask the user if they want to use that updated prompt" implies writing the accepted result back to the item content (`updateItem` action / the edit form's content state), unlike Explain which never mutates anything.
+- Decide during implementation: how the accept/reject UI works (e.g. a third "Optimized" tab alongside Write/Preview with Accept/Discard actions, vs. an inline diff) — not fully specified by the user, use judgment consistent with existing patterns (`CodeEditor`'s Code/Explain tab toggle is the closest precedent).
+- `.env`/`project-overview.md` already lists "✨ Prompt optimizer" as a planned Pro AI feature alongside auto-tagging/summaries/explain — this closes out that set.
 
 ## History
 

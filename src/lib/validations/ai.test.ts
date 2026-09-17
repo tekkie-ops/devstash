@@ -4,6 +4,7 @@ import {
   explainCodeSchema,
   generateAutoTagsSchema,
   generateDescriptionSchema,
+  optimizePromptSchema,
   tagSuggestionsSchema,
 } from "@/lib/validations/ai";
 
@@ -101,5 +102,20 @@ describe("explainCodeSchema", () => {
       language: "typescript",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("optimizePromptSchema", () => {
+  it("requires non-blank content", () => {
+    const result = optimizePromptSchema.safeParse({ content: "  " });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid payload", () => {
+    const result = optimizePromptSchema.safeParse({
+      content: "Write a haiku about the ocean.",
+    });
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ content: "Write a haiku about the ocean." });
   });
 });
