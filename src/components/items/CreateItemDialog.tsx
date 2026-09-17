@@ -10,6 +10,7 @@ import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { CodeEditor } from "@/components/items/CodeEditor";
 import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
 import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
+import { GenerateDescriptionButton } from "@/components/items/GenerateDescriptionButton";
 import { Field } from "@/components/items/ItemFormField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
 import { MarkdownEditor } from "@/components/items/MarkdownEditor";
@@ -209,12 +210,26 @@ export function CreateItemDialog({
             </Field>
 
             <Field label="Description" htmlFor="create-item-description">
-              <Textarea
-                id="create-item-description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                rows={2}
-              />
+              <div className="relative">
+                <Textarea
+                  id="create-item-description"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={2}
+                  className="pr-9"
+                />
+                {isPro && (
+                  <GenerateDescriptionButton
+                    className="absolute top-1.5 right-1.5"
+                    title={title}
+                    content={showContent ? content : ""}
+                    url={showUrl ? url : ""}
+                    language={showLanguage ? language : ""}
+                    fileName={showFile ? (uploadedFile?.fileName ?? "") : ""}
+                    onGenerated={setDescription}
+                  />
+                )}
+              </div>
             </Field>
 
             {showLanguage && (

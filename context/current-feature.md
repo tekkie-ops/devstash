@@ -1,16 +1,25 @@
-# Current Feature
+# Current Feature: AI Description/Summary Generator
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+- An icon button next to the Description field (both the New Item dialog and the item drawer's edit form) generates a concise 1-2 sentence description/summary and fills it into the field.
+- Works for all item types (snippet, prompt, note, command, link, file, image) using whatever fields are currently available for that type — no requirement to save the item first.
+- Works from the form's live, possibly-unsaved state (title, content, url, language, tags, fileName — whatever applies to the current type), exactly like `SuggestTagsButton` already does for tags.
+- Pro-gated and rate-limited like the existing AI Auto-Tagging feature; a no-op/unavailable state when OpenAI isn't configured.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+- This is the "AI summaries" Pro feature named in `project-overview.md`'s AI Features section — the second AI feature after AI Auto-Tagging, and should reuse that feature's foundation (`src/lib/openai.ts`'s lazy client singleton, `AI_MODEL`, `isOpenAIConfigured()`) rather than duplicating it.
+- Follow `generateAutoTags`'s exact server-action shape in `src/actions/ai.ts` (see `generateAutoTags`): auth gate → Zod validation → `isOpenAIConfigured()` check → Pro gate (`isFeatureGatingEnabled()` + a fresh `prisma.user.findUnique`, never the session's `isPro` claim) → rate limit (`checkRateLimit`, its own prefix e.g. `"ai:describe"`) → the OpenAI call. Must use the Responses API (not Chat Completions — gpt-5-nano returns empty content on that), `reasoning: { effort: "minimal" }` (otherwise gpt-5-nano burns the whole `max_output_tokens` budget on invisible reasoning tokens and returns empty `output_text` — a real bug hit and fixed in the auto-tagging feature), and the literal word "json" somewhere in the *input* text if requesting `text.format: {type:"json_object"}" (also a real bug hit previously) — or simplest: since this only needs one short plain-text string back (not structured JSON), consider skipping the JSON response format entirely and just using the trimmed `output_text` directly, avoiding both of those gotchas.
+- Available fields differ by type — pass whatever the current type actually shows: title + content (+ language) for snippet/prompt/command/note, title + url for link, title (+ fileName) for file/image (file/image items have no content/url editable in the drawer's edit form, only title/description/tags — see `ItemDrawerEditForm.tsx`).
+- New component, e.g. `GenerateDescriptionButton` (`src/components/items/`), Sparkles-or-similar icon button placed next to the Description `Field` in both `CreateItemDialog.tsx` and `ItemDrawerEditForm.tsx` (mirroring where `SuggestTagsButton` sits next to Tags). Unlike tags, there's a single field to fill — no accept/reject list needed; clicking generates and directly replaces (or fills, if empty) the Description textarea's value via an `onDescriptionChange`-style callback, matching the prop-drilling pattern already used for `onAcceptTag`.
+- Disable the button while `title` is blank (nothing meaningful to summarize) and while a request is in flight, matching `SuggestTagsButton`'s disabled logic.
+- New validation schema in `src/lib/validations/ai.ts` alongside `generateAutoTagsSchema`/`tagSuggestionsSchema` for this action's input/output.
+- Add unit tests for the new server action and schema, following `src/actions/ai.test.ts` / `src/lib/validations/ai.test.ts`'s existing coverage shape (auth/validation/config/gating rejections, happy path, SDK-throw handling).
 
 ## History
 

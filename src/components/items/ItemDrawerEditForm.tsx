@@ -1,5 +1,6 @@
 import { CodeEditor } from "@/components/items/CodeEditor";
 import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
+import { GenerateDescriptionButton } from "@/components/items/GenerateDescriptionButton";
 import { Section } from "@/components/items/ItemDetailSection";
 import { Field } from "@/components/items/ItemFormField";
 import { LanguageSelect } from "@/components/items/LanguageSelect";
@@ -78,12 +79,26 @@ export function EditForm({
       </Field>
 
       <Field label="Description" htmlFor="item-description">
-        <Textarea
-          id="item-description"
-          value={description}
-          onChange={(event) => onDescriptionChange(event.target.value)}
-          rows={3}
-        />
+        <div className="relative">
+          <Textarea
+            id="item-description"
+            value={description}
+            onChange={(event) => onDescriptionChange(event.target.value)}
+            rows={3}
+            className="pr-9"
+          />
+          {isPro && (
+            <GenerateDescriptionButton
+              className="absolute top-1.5 right-1.5"
+              title={title}
+              content={showContent ? content : ""}
+              url={showUrl ? url : ""}
+              language={showLanguage ? language : ""}
+              fileName={detail.fileName ?? ""}
+              onGenerated={onDescriptionChange}
+            />
+          )}
+        </div>
       </Field>
 
       {showLanguage && (
