@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  explainCodeSchema,
   generateAutoTagsSchema,
   generateDescriptionSchema,
   tagSuggestionsSchema,
@@ -72,6 +73,32 @@ describe("generateDescriptionSchema", () => {
       url: "",
       language: "typescript",
       fileName: "",
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("explainCodeSchema", () => {
+  it("requires non-blank content", () => {
+    const result = explainCodeSchema.safeParse({ content: "  " });
+    expect(result.success).toBe(false);
+  });
+
+  it("defaults a missing language to an empty string", () => {
+    const result = explainCodeSchema.safeParse({
+      content: "console.log('hi')",
+    });
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({
+      content: "console.log('hi')",
+      language: "",
+    });
+  });
+
+  it("accepts a fully populated payload", () => {
+    const result = explainCodeSchema.safeParse({
+      content: "console.log('hi')",
+      language: "typescript",
     });
     expect(result.success).toBe(true);
   });

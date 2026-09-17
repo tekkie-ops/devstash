@@ -11,7 +11,13 @@ import { CODE_TYPES, MARKDOWN_TYPES } from "@/lib/item-types";
 import { formatFileSize } from "@/lib/upload";
 
 /** The item drawer's read-only (view mode) body. */
-export function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
+export function ItemDrawerBody({
+  detail,
+  isPro,
+}: {
+  detail: ItemDetail;
+  isPro: boolean;
+}) {
   return (
     <div className="flex flex-col gap-6">
       {detail.description && (
@@ -20,7 +26,7 @@ export function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
         </Section>
       )}
 
-      <ContentSection detail={detail} />
+      <ContentSection detail={detail} isPro={isPro} />
 
       {detail.tags.length > 0 && (
         <Section title="Tags">
@@ -62,7 +68,13 @@ export function ItemDrawerBody({ detail }: { detail: ItemDetail }) {
   );
 }
 
-function ContentSection({ detail }: { detail: ItemDetail }) {
+function ContentSection({
+  detail,
+  isPro,
+}: {
+  detail: ItemDetail;
+  isPro: boolean;
+}) {
   if (detail.contentType === "file") {
     return <FileSection detail={detail} />;
   }
@@ -90,6 +102,8 @@ function ContentSection({ detail }: { detail: ItemDetail }) {
             value={detail.content}
             language={detail.language}
             readOnly
+            explainable
+            isPro={isPro}
           />
         ) : MARKDOWN_TYPES.includes(detail.type.name) ? (
           <MarkdownEditor value={detail.content} readOnly />

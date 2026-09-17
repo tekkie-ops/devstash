@@ -57,3 +57,18 @@ export const generateDescriptionSchema = z.object({
 export type GenerateDescriptionInput = z.infer<
   typeof generateDescriptionSchema
 >;
+
+/**
+ * Input accepted by `explainCode`. Only used for the code-bearing item types
+ * (snippet, command) from the item drawer's read view, so content is always
+ * present; language is optional since a command may not have one set.
+ */
+export const explainCodeSchema = z.object({
+  content: z.string().trim().min(1, "Content is required"),
+  language: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ""),
+});
+
+export type ExplainCodeInput = z.infer<typeof explainCodeSchema>;
