@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { MobileNavMenu } from "@/components/homepage/MobileNavMenu";
 import { NavbarShell } from "@/components/homepage/NavbarShell";
 import { BRAND_GRADIENT } from "@/components/homepage/item-colors";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export function Navbar({ isAuthenticated }: { isAuthenticated: boolean }) {
               </Button>
             </>
           )}
+          <MobileNavMenu />
         </div>
       </div>
     </NavbarShell>

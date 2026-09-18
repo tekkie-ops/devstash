@@ -4,11 +4,7 @@ import { Star } from "lucide-react";
 import { auth } from "@/auth";
 import { FavoriteCollectionsSection } from "@/components/favorites/FavoriteCollectionsSection";
 import { FavoriteItemsSection } from "@/components/favorites/FavoriteItemsSection";
-import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
-import {
-  getCollectionsForSelect,
-  getFavoriteCollections,
-} from "@/lib/db/collections";
+import { getFavoriteCollections } from "@/lib/db/collections";
 import { getFavoriteItems } from "@/lib/db/items";
 
 /** Safety cap on the page's two sections — not paginated, per the feature spec. */
@@ -22,10 +18,9 @@ export default async function FavoritesPage() {
     return null;
   }
 
-  const [items, collections, availableCollections] = await Promise.all([
+  const [items, collections] = await Promise.all([
     getFavoriteItems(userId, FAVORITES_LIMIT),
     getFavoriteCollections(userId, FAVORITES_LIMIT),
-    getCollectionsForSelect(userId),
   ]);
 
   const isEmpty = items.length === 0 && collections.length === 0;
@@ -42,13 +37,10 @@ export default async function FavoritesPage() {
           No favorites yet. Star an item or collection to see it here.
         </p>
       ) : (
-        <ItemDrawerProvider
-          availableCollections={availableCollections}
-          isPro={session?.user?.isPro ?? false}
-        >
+        <>
           <FavoriteItemsSection items={items} />
           <FavoriteCollectionsSection collections={collections} />
-        </ItemDrawerProvider>
+        </>
       )}
 
       <Link

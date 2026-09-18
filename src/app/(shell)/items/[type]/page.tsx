@@ -6,9 +6,7 @@ import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
 import { FileListRow } from "@/components/items/FileListRow";
 import { ImageThumbnailCard } from "@/components/items/ImageThumbnailCard";
 import { ItemCard } from "@/components/items/ItemCard";
-import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
 import { PaginationControls } from "@/components/shared/PaginationControls";
-import { getCollectionsForSelect } from "@/lib/db/collections";
 import { getItemsByTypeSlug } from "@/lib/db/items";
 import { getTotalPages, ITEMS_PER_PAGE, parsePage } from "@/lib/pagination";
 import { PRO_ONLY_ITEM_TYPES, isFeatureGatingEnabled } from "@/lib/plan-limits";
@@ -21,12 +19,8 @@ export default async function ItemsByTypePage({
   const { page: pageParam } = await searchParams;
   const page = parsePage(pageParam);
   const session = await auth();
-  const userId = session?.user?.id;
 
-  const [result, availableCollections] = await Promise.all([
-    getItemsByTypeSlug(slug, page),
-    userId ? getCollectionsForSelect(userId) : Promise.resolve([]),
-  ]);
+  const result = await getItemsByTypeSlug(slug, page);
 
   if (!result) {
     notFound();
@@ -65,28 +59,23 @@ export default async function ItemsByTypePage({
       </header>
 
       {items.length > 0 ? (
-        <ItemDrawerProvider
-          availableCollections={availableCollections}
-          isPro={session?.user?.isPro ?? false}
-        >
-          {isFileType ? (
-            <div className="divide-y overflow-hidden rounded-xl border bg-card">
-              {items.map((item) => (
-                <FileListRow key={item.id} item={item} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((item) =>
-                isImageType ? (
-                  <ImageThumbnailCard key={item.id} item={item} />
-                ) : (
-                  <ItemCard key={item.id} item={item} />
-                ),
-              )}
-            </div>
-          )}
-        </ItemDrawerProvider>
+        isFileType ? (
+          <div className="divide-y overflow-hidden rounded-xl border bg-card">
+            {items.map((item) => (
+              <FileListRow key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) =>
+              isImageType ? (
+                <ImageThumbnailCard key={item.id} item={item} />
+              ) : (
+                <ItemCard key={item.id} item={item} />
+              ),
+            )}
+          </div>
+        )
       ) : (
         <p className="text-sm text-muted-foreground">
           No {type.label.toLowerCase()} yet.

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Folder, Star } from "lucide-react";
 
 import {
@@ -19,10 +22,13 @@ function CollectionMenuItem({
   collection: CollectionSummary;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const href = `/collections/${collection.id}`;
+
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild tooltip={collection.name}>
-        <Link href={`/collections/${collection.id}`}>
+      <SidebarMenuButton asChild tooltip={collection.name} isActive={pathname === href}>
+        <Link href={href}>
           <Folder />
           <span>{collection.name}</span>
         </Link>
@@ -39,6 +45,8 @@ export function SidebarCollectionsNav({
   favoriteCollections: CollectionSummary[];
   recentCollections: CollectionSummary[];
 }) {
+  const pathname = usePathname();
+
   return (
     <>
       {favoriteCollections.length > 0 && (
@@ -73,7 +81,11 @@ export function SidebarCollectionsNav({
               </CollectionMenuItem>
             ))}
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="View all collections">
+              <SidebarMenuButton
+                asChild
+                tooltip="View all collections"
+                isActive={pathname === "/collections"}
+              >
                 <Link href="/collections" className="text-sidebar-foreground/70">
                   <span>View all collections</span>
                 </Link>
