@@ -11,9 +11,11 @@ import {
 } from "@/lib/db/collections";
 import { getSearchableItems } from "@/lib/db/items";
 
-export default async function DashboardLayout({
+export default async function ShellLayout({
   children,
-}: LayoutProps<"/dashboard">) {
+}: {
+  children: React.ReactNode;
+}) {
   const session = await auth();
   const userId = session?.user?.id;
 

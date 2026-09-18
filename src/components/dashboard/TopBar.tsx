@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Crown, Star } from "lucide-react";
 
 import { auth } from "@/auth";
 import { CreateCollectionDialog } from "@/components/collections/CreateCollectionDialog";
@@ -27,8 +27,11 @@ export async function TopBar() {
 
       <div className="ml-auto flex items-center gap-2">
         {!session?.user?.isPro && (
-          <Button size="sm" asChild>
-            <Link href="/upgrade">Upgrade</Link>
+          <Button size="sm" asChild aria-label="Upgrade">
+            <Link href="/upgrade">
+              <Crown />
+              <span className="hidden sm:inline">Upgrade</span>
+            </Link>
           </Button>
         )}
         <Button variant="ghost" size="icon" asChild>

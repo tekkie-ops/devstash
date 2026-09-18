@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import {
   SidebarGroup,
@@ -26,6 +29,8 @@ export function SidebarTypesNav({
 }: {
   itemTypes: ItemTypeSummary[];
 }) {
+  const pathname = usePathname();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Types</SidebarGroupLabel>
@@ -33,11 +38,16 @@ export function SidebarTypesNav({
         <SidebarMenu>
           {itemTypes.map((type) => {
             const Icon = ITEM_TYPE_ICONS[type.icon];
+            const href = itemTypeHref(type.label);
 
             return (
               <SidebarMenuItem key={type.id}>
-                <SidebarMenuButton asChild tooltip={type.label}>
-                  <Link href={itemTypeHref(type.label)}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={type.label}
+                  isActive={pathname === href}
+                >
+                  <Link href={href}>
                     {Icon ? <Icon style={{ color: type.color }} /> : null}
                     <span>{type.label}</span>
                     {PRO_TYPE_NAMES.has(type.name) && (

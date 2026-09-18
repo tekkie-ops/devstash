@@ -4,12 +4,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { CollectionDetailActions } from "@/components/collections/CollectionDetailActions";
 import { ItemCard } from "@/components/items/ItemCard";
-import { ItemDrawerProvider } from "@/components/items/ItemDrawerProvider";
 import { PaginationControls } from "@/components/shared/PaginationControls";
-import {
-  getCollectionDetail,
-  getCollectionsForSelect,
-} from "@/lib/db/collections";
+import { getCollectionDetail } from "@/lib/db/collections";
 import { getItemsByCollectionId } from "@/lib/db/items";
 import { getTotalPages, ITEMS_PER_PAGE, parsePage } from "@/lib/pagination";
 
@@ -39,10 +35,7 @@ export default async function CollectionDetailPage({
     notFound();
   }
 
-  const [items, availableCollections] = await Promise.all([
-    getItemsByCollectionId(userId, id, page),
-    getCollectionsForSelect(userId),
-  ]);
+  const items = await getItemsByCollectionId(userId, id, page);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -62,16 +55,11 @@ export default async function CollectionDetailPage({
       </header>
 
       {items.length > 0 ? (
-        <ItemDrawerProvider
-          availableCollections={availableCollections}
-          isPro={session?.user?.isPro ?? false}
-        >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        </ItemDrawerProvider>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <ItemCard key={item.id} item={item} />
+          ))}
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground">
           No items in this collection yet.
