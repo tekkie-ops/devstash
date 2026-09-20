@@ -6,15 +6,10 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { createItem } from "@/actions/items";
-import { ItemTypeIcon } from "@/components/dashboard/ItemTypeIcon";
-import { CodeEditor } from "@/components/items/CodeEditor";
-import { CollectionMultiSelect } from "@/components/items/CollectionMultiSelect";
-import { FileUpload, type UploadedFile } from "@/components/items/FileUpload";
-import { GenerateDescriptionButton } from "@/components/items/GenerateDescriptionButton";
+import { CreateItemFields } from "@/components/items/CreateItemFields";
+import { CreateItemTypeSelector } from "@/components/items/CreateItemTypeSelector";
+import type { UploadedFile } from "@/components/items/FileUpload";
 import { Field } from "@/components/items/ItemFormField";
-import { LanguageSelect } from "@/components/items/LanguageSelect";
-import { MarkdownEditor } from "@/components/items/MarkdownEditor";
-import { SuggestTagsButton } from "@/components/items/SuggestTagsButton";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,7 +20,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import type {
   CollectionItemType,
   CollectionOption,
@@ -36,8 +30,6 @@ import {
   LANGUAGE_TYPES,
   MARKDOWN_TYPES,
 } from "@/lib/item-types";
-import type { UploadKind } from "@/lib/upload";
-import { cn } from "@/lib/utils";
 import { FILE_ITEM_TYPES } from "@/lib/validations/items";
 
 /**
@@ -175,28 +167,11 @@ export function CreateItemDialog({
         <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="flex flex-col gap-6 p-6">
             <Field label="Type">
-              <div className="flex flex-wrap gap-2">
-                {types.map((type) => {
-                  const selected = typeName === type.name;
-                  return (
-                    <button
-                      key={type.id}
-                      type="button"
-                      onClick={() => handleTypeChange(type.name)}
-                      aria-pressed={selected}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                        selected
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:bg-muted",
-                      )}
-                    >
-                      <ItemTypeIcon type={type} />
-                      {type.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <CreateItemTypeSelector
+                types={types}
+                value={typeName}
+                onChange={handleTypeChange}
+              />
             </Field>
 
             <Field label="Title" htmlFor="create-item-title">
@@ -209,119 +184,34 @@ export function CreateItemDialog({
               />
             </Field>
 
-            <Field label="Description" htmlFor="create-item-description">
-              <div className="relative">
-                <Textarea
-                  id="create-item-description"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  rows={2}
-                  className="pr-9"
-                />
-                {isPro && (
-                  <GenerateDescriptionButton
-                    className="absolute top-1.5 right-1.5"
-                    title={title}
-                    content={showContent ? content : ""}
-                    url={showUrl ? url : ""}
-                    language={showLanguage ? language : ""}
-                    fileName={showFile ? (uploadedFile?.fileName ?? "") : ""}
-                    onGenerated={setDescription}
-                  />
-                )}
-              </div>
-            </Field>
-
-            {showLanguage && (
-              <Field label="Language" htmlFor="create-item-language">
-                <LanguageSelect
-                  id="create-item-language"
-                  value={language}
-                  onChange={setLanguage}
-                />
-              </Field>
-            )}
-
-            {showContent &&
-              (showCode ? (
-                <Field label="Content">
-                  <CodeEditor
-                    value={content}
-                    language={language}
-                    onChange={setContent}
-                  />
-                </Field>
-              ) : showMarkdown ? (
-                <Field label="Content">
-                  <MarkdownEditor value={content} onChange={setContent} />
-                </Field>
-              ) : (
-                <Field label="Content" htmlFor="create-item-content">
-                  <Textarea
-                    id="create-item-content"
-                    value={content}
-                    onChange={(event) => setContent(event.target.value)}
-                    rows={6}
-                    className="font-mono text-xs"
-                  />
-                </Field>
-              ))}
-
-            {showFile && (
-              <Field label={typeName === "image" ? "Image" : "File"}>
-                <FileUpload
-                  kind={typeName as UploadKind}
-                  value={uploadedFile}
-                  onChange={setUploadedFile}
-                  onUploadingChange={setUploading}
-                />
-              </Field>
-            )}
-
-            {showUrl && (
-              <Field label="URL" htmlFor="create-item-url">
-                <Input
-                  id="create-item-url"
-                  type="url"
-                  value={url}
-                  onChange={(event) => setUrl(event.target.value)}
-                  placeholder="https://…"
-                  required
-                />
-              </Field>
-            )}
-
-            <Field label="Tags" htmlFor="create-item-tags">
-              <Input
-                id="create-item-tags"
-                value={tagsInput}
-                onChange={(event) => setTagsInput(event.target.value)}
-                placeholder="comma, separated, tags"
-              />
-              <p className="text-xs text-muted-foreground">
-                Separate tags with commas.
-              </p>
-              {isPro && (
-                <SuggestTagsButton
-                  title={title}
-                  description={description}
-                  content={content}
-                  existingTags={tagsInput
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean)}
-                  onAcceptTag={addTag}
-                />
-              )}
-            </Field>
-
-            <Field label="Collections">
-              <CollectionMultiSelect
-                collections={collections}
-                selectedIds={collectionIds}
-                onChange={setCollectionIds}
-              />
-            </Field>
+            <CreateItemFields
+              typeName={typeName}
+              isPro={isPro}
+              collections={collections}
+              title={title}
+              description={description}
+              onDescriptionChange={setDescription}
+              content={content}
+              onContentChange={setContent}
+              language={language}
+              onLanguageChange={setLanguage}
+              url={url}
+              onUrlChange={setUrl}
+              tagsInput={tagsInput}
+              onTagsInputChange={setTagsInput}
+              onAddTag={addTag}
+              collectionIds={collectionIds}
+              onCollectionIdsChange={setCollectionIds}
+              uploadedFile={uploadedFile}
+              onUploadedFileChange={setUploadedFile}
+              onUploadingChange={setUploading}
+              showContent={showContent}
+              showLanguage={showLanguage}
+              showCode={showCode}
+              showMarkdown={showMarkdown}
+              showUrl={showUrl}
+              showFile={showFile}
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t p-6">

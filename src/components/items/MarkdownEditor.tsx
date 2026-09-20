@@ -3,16 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Copy, Crown, Loader2, Sparkles } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { optimizePrompt } from "@/actions/ai";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { EditorAiActionButton } from "@/components/items/EditorAiActionButton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -164,44 +159,17 @@ export function MarkdownEditor({
             <Copy className="size-3.5" />
             Copy
           </button>
-          {optimizable &&
-            (isPro ? (
-              <button
-                type="button"
-                onClick={handleOptimize}
-                disabled={optimizing || !value.trim()}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-              >
-                {optimizing ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="size-3.5" />
-                )}
-                {optimizing ? "Optimizing…" : "Optimize"}
-              </button>
-            ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {/* aria-disabled, not the disabled attribute — a natively
-                        disabled button fires no pointer/focus events, so the
-                        tooltip would never open (same fix as <CodeEditor>'s
-                        Explain gating). */}
-                    <button
-                      type="button"
-                      aria-disabled="true"
-                      className="inline-flex cursor-not-allowed items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground opacity-70"
-                    >
-                      <Crown className="size-3.5" />
-                      Optimize
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    AI features require Pro subscription
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
+          {optimizable && (
+            <EditorAiActionButton
+              icon={Sparkles}
+              label="Optimize"
+              loadingLabel="Optimizing…"
+              loading={optimizing}
+              disabled={optimizing || !value.trim()}
+              onClick={handleOptimize}
+              isPro={isPro}
+            />
+          )}
         </div>
       </div>
 
