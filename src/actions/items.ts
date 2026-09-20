@@ -10,6 +10,7 @@ import {
   updateItem as updateItemRecord,
 } from "@/lib/db/items";
 import type { ItemDetail } from "@/lib/db/items";
+import { isUserPro } from "@/lib/db/user";
 import {
   FREE_ITEM_LIMIT,
   PRO_ONLY_ITEM_TYPES,
@@ -17,7 +18,6 @@ import {
   itemLimitMessage,
   proTypeMessage,
 } from "@/lib/plan-limits";
-import { prisma } from "@/lib/prisma";
 import { r2KeyFromUrl } from "@/lib/r2";
 import {
   FILE_ITEM_TYPES,
@@ -58,21 +58,14 @@ export async function createItem(input: unknown): Promise<CreateItemResult> {
     };
   }
 
-  if (isFeatureGatingEnabled()) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { isPro: true },
-    });
+  if (isFeatureGatingEnabled() && !(await isUserPro(session.user.id))) {
+    if (PRO_ONLY_ITEM_TYPES.includes(parsed.data.type)) {
+      return { success: false, error: proTypeMessage() };
+    }
 
-    if (!user?.isPro) {
-      if (PRO_ONLY_ITEM_TYPES.includes(parsed.data.type)) {
-        return { success: false, error: proTypeMessage() };
-      }
-
-      const itemCount = await getItemCountForUser(session.user.id);
-      if (itemCount >= FREE_ITEM_LIMIT) {
-        return { success: false, error: itemLimitMessage() };
-      }
+    const itemCount = await getItemCountForUser(session.user.id);
+    if (itemCount >= FREE_ITEM_LIMIT) {
+      return { success: false, error: itemLimitMessage() };
     }
   }
 

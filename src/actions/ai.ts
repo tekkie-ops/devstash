@@ -1,10 +1,8 @@
 "use server";
 
 import { auth } from "@/auth";
-import { AI_MODEL, isOpenAIConfigured, openaiClient } from "@/lib/openai";
-import { aiFeatureMessage, isFeatureGatingEnabled } from "@/lib/plan-limits";
-import { prisma } from "@/lib/prisma";
-import { checkRateLimit, rateLimitExceededMessage } from "@/lib/rate-limit";
+import { requireAiAccess } from "@/lib/ai-guard";
+import { AI_MODEL, openaiClient } from "@/lib/openai";
 import {
   explainCodeSchema,
   generateAutoTagsSchema,
@@ -74,23 +72,9 @@ export async function generateAutoTags(
     };
   }
 
-  if (!isOpenAIConfigured()) {
-    return { success: false, error: "AI features are not configured" };
-  }
-
-  if (isFeatureGatingEnabled()) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { isPro: true },
-    });
-    if (!user?.isPro) {
-      return { success: false, error: aiFeatureMessage() };
-    }
-  }
-
-  const rate = await checkRateLimit("ai:tag", session.user.id, 20, "1 h");
-  if (!rate.success) {
-    return { success: false, error: rateLimitExceededMessage(rate.reset) };
+  const access = await requireAiAccess(session.user.id, "ai:tag");
+  if (!access.ok) {
+    return { success: false, error: access.error };
   }
 
   try {
@@ -198,23 +182,9 @@ export async function generateDescription(
     };
   }
 
-  if (!isOpenAIConfigured()) {
-    return { success: false, error: "AI features are not configured" };
-  }
-
-  if (isFeatureGatingEnabled()) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { isPro: true },
-    });
-    if (!user?.isPro) {
-      return { success: false, error: aiFeatureMessage() };
-    }
-  }
-
-  const rate = await checkRateLimit("ai:describe", session.user.id, 20, "1 h");
-  if (!rate.success) {
-    return { success: false, error: rateLimitExceededMessage(rate.reset) };
+  const access = await requireAiAccess(session.user.id, "ai:describe");
+  if (!access.ok) {
+    return { success: false, error: access.error };
   }
 
   try {
@@ -311,23 +281,9 @@ export async function explainCode(input: unknown): Promise<ExplainCodeResult> {
     };
   }
 
-  if (!isOpenAIConfigured()) {
-    return { success: false, error: "AI features are not configured" };
-  }
-
-  if (isFeatureGatingEnabled()) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { isPro: true },
-    });
-    if (!user?.isPro) {
-      return { success: false, error: aiFeatureMessage() };
-    }
-  }
-
-  const rate = await checkRateLimit("ai:explain", session.user.id, 20, "1 h");
-  if (!rate.success) {
-    return { success: false, error: rateLimitExceededMessage(rate.reset) };
+  const access = await requireAiAccess(session.user.id, "ai:explain");
+  if (!access.ok) {
+    return { success: false, error: access.error };
   }
 
   try {
@@ -416,23 +372,9 @@ export async function optimizePrompt(
     };
   }
 
-  if (!isOpenAIConfigured()) {
-    return { success: false, error: "AI features are not configured" };
-  }
-
-  if (isFeatureGatingEnabled()) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { isPro: true },
-    });
-    if (!user?.isPro) {
-      return { success: false, error: aiFeatureMessage() };
-    }
-  }
-
-  const rate = await checkRateLimit("ai:optimize", session.user.id, 20, "1 h");
-  if (!rate.success) {
-    return { success: false, error: rateLimitExceededMessage(rate.reset) };
+  const access = await requireAiAccess(session.user.id, "ai:optimize");
+  if (!access.ok) {
+    return { success: false, error: access.error };
   }
 
   try {

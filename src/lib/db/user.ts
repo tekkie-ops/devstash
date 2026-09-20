@@ -16,3 +16,16 @@ export const getDemoUserId = cache(async (): Promise<string | null> => {
 
   return user?.id ?? null;
 });
+
+/**
+ * Re-reads Pro status straight from the DB — never trust a session/JWT claim
+ * for a gating decision, since it can lag a webhook-driven change.
+ */
+export async function isUserPro(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isPro: true },
+  });
+
+  return user?.isPro ?? false;
+}
