@@ -21,6 +21,30 @@ export function toLabel(name: string): string {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)}s`;
 }
 
+export interface CollectionItemType {
+  id: string;
+  name: string;
+  label: string;
+  icon: string;
+  color: string;
+}
+
+/** Maps a raw Prisma ItemType row into the shared CollectionItemType shape. */
+export function toCollectionItemType(itemType: {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}): CollectionItemType {
+  return {
+    id: itemType.id,
+    name: itemType.name,
+    label: toLabel(itemType.name),
+    icon: itemType.icon,
+    color: itemType.color,
+  };
+}
+
 /** Type names whose items carry an editable free-text body. */
 export const CONTENT_TYPES: readonly string[] = [
   "snippet",

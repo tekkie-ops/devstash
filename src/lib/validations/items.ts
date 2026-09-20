@@ -1,13 +1,6 @@
 import { z } from "zod";
 
-/** Optional free text: trims, and collapses "" / whitespace-only to null. */
-const optionalTrimmedText = z
-  .string()
-  .nullish()
-  .transform((value) => {
-    const trimmed = (value ?? "").trim();
-    return trimmed.length > 0 ? trimmed : null;
-  });
+import { optionalTrimmedText } from "@/lib/validations/shared";
 
 /**
  * Optional body text that must survive round-tripping verbatim (code, prompts),
@@ -78,15 +71,6 @@ export const ALL_CREATE_ITEM_TYPES = [
 export type CreateItemType = (typeof ALL_CREATE_ITEM_TYPES)[number];
 export type FileItemType = (typeof FILE_ITEM_TYPES)[number];
 
-/** Optional non-empty trimmed string, blank -> null. */
-const optionalNonEmpty = z
-  .string()
-  .nullish()
-  .transform((value) => {
-    const trimmed = (value ?? "").trim();
-    return trimmed.length > 0 ? trimmed : null;
-  });
-
 /**
  * Payload accepted by the `createItem` server action — the update fields plus a
  * `type` discriminator and (for `file` / `image`) the metadata of an
@@ -97,8 +81,8 @@ const optionalNonEmpty = z
 export const createItemSchema = updateItemSchema
   .extend({
     type: z.enum(ALL_CREATE_ITEM_TYPES),
-    fileUrl: optionalNonEmpty,
-    fileName: optionalNonEmpty,
+    fileUrl: optionalTrimmedText,
+    fileName: optionalTrimmedText,
     fileSize: z
       .number()
       .int()

@@ -1,13 +1,6 @@
 import { z } from "zod";
 
-/** Optional free text: trims, and collapses "" / whitespace-only to null. */
-const optionalTrimmedText = z
-  .string()
-  .nullish()
-  .transform((value) => {
-    const trimmed = (value ?? "").trim();
-    return trimmed.length > 0 ? trimmed : null;
-  });
+import { optionalTrimmedText } from "@/lib/validations/shared";
 
 /**
  * Payload accepted by `POST /api/collections`. The route is the source of

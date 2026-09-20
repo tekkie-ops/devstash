@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+/** Optional string: `null`/`undefined` collapses to an empty string. */
+const optionalToEmptyString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? "");
+
 /**
  * Input accepted by `generateAutoTags`. Takes the raw form fields rather than
  * an item id, since the create-item dialog needs suggestions before the item
@@ -7,14 +13,8 @@ import { z } from "zod";
  */
 export const generateAutoTagsSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
-  description: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
-  content: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
+  description: optionalToEmptyString,
+  content: optionalToEmptyString,
 });
 
 export type GenerateAutoTagsInput = z.infer<typeof generateAutoTagsSchema>;
@@ -36,22 +36,10 @@ export const tagSuggestionsSchema = z
  */
 export const generateDescriptionSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
-  content: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
-  url: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
-  language: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
-  fileName: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
+  content: optionalToEmptyString,
+  url: optionalToEmptyString,
+  language: optionalToEmptyString,
+  fileName: optionalToEmptyString,
 });
 
 export type GenerateDescriptionInput = z.infer<
@@ -65,10 +53,7 @@ export type GenerateDescriptionInput = z.infer<
  */
 export const explainCodeSchema = z.object({
   content: z.string().trim().min(1, "Content is required"),
-  language: z
-    .string()
-    .nullish()
-    .transform((value) => value ?? ""),
+  language: optionalToEmptyString,
 });
 
 export type ExplainCodeInput = z.infer<typeof explainCodeSchema>;

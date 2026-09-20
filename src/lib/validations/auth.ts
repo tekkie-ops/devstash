@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+/**
+ * Returns the [check, params] pair for a "these two fields must match" Zod
+ * `.refine()`, spread as `.refine(...passwordsMatchRefinement(...))`.
+ */
+function passwordsMatchRefinement(passwordField: string, confirmField: string) {
+  return [
+    (data: Record<string, unknown>) => data[passwordField] === data[confirmField],
+    { message: "Passwords do not match", path: [confirmField] as PropertyKey[] },
+  ] as const;
+}
+
 export const registerSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required"),
@@ -7,10 +18,7 @@ export const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+  .refine(...passwordsMatchRefinement("password", "confirmPassword"));
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -32,10 +40,7 @@ export const resetPasswordSchema = z
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+  .refine(...passwordsMatchRefinement("password", "confirmPassword"));
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
@@ -45,9 +50,6 @@ export const changePasswordSchema = z
     newPassword: z.string().min(8, "Password must be at least 8 characters"),
     confirmNewPassword: z.string(),
   })
-  .refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: "Passwords do not match",
-    path: ["confirmNewPassword"],
-  });
+  .refine(...passwordsMatchRefinement("newPassword", "confirmNewPassword"));
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

@@ -1,18 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { toLabel } from "@/lib/item-types";
+import { toCollectionItemType } from "@/lib/item-types";
+import type { CollectionItemType } from "@/lib/item-types";
 import { COLLECTIONS_PER_PAGE, getSkip } from "@/lib/pagination";
 import type {
   CreateCollectionInput,
   UpdateCollectionInput,
 } from "@/lib/validations/collections";
 
-export interface CollectionItemType {
-  id: string;
-  name: string;
-  label: string;
-  icon: string;
-  color: string;
-}
+export type { CollectionItemType };
 
 export interface CollectionOption {
   id: string;
@@ -56,13 +51,7 @@ function toCollectionSummary(collection: CollectionWithItems): CollectionSummary
       existing.count += 1;
     } else {
       typeCounts.set(item.itemType.id, {
-        type: {
-          id: item.itemType.id,
-          name: item.itemType.name,
-          label: toLabel(item.itemType.name),
-          icon: item.itemType.icon,
-          color: item.itemType.color,
-        },
+        type: toCollectionItemType(item.itemType),
         count: 1,
       });
     }
