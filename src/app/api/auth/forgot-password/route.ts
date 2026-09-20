@@ -4,6 +4,7 @@ import { forgotPasswordSchema } from "@/lib/validations/auth";
 import { createPasswordResetToken } from "@/lib/tokens";
 import { sendPasswordResetEmail } from "@/lib/email/send-password-reset-email";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { parseJsonBody } from "@/lib/api-response";
 
 export async function POST(request: Request) {
   const ip = getClientIp(request.headers);
@@ -12,15 +13,8 @@ export async function POST(request: Request) {
     return rateLimitResponse(rateLimit.reset);
   }
 
-  const body = await request.json().catch(() => null);
-  const parsed = forgotPasswordSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseJsonBody(request, forgotPasswordSchema);
+  if (parsed.response) return parsed.response;
 
   const { email } = parsed.data;
   const user = await prisma.user.findUnique({ where: { email } });

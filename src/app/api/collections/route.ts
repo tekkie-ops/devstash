@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { internalErrorResponse, parseJsonBody } from "@/lib/api-response";
+import { requireUserId } from "@/lib/auth-guard";
 import { createCollection, getCollectionStats } from "@/lib/db/collections";
 import {
   FREE_COLLECTION_LIMIT,
@@ -16,36 +17,20 @@ import { createCollectionSchema } from "@/lib/validations/collections";
  * not); the schema is the source of truth for validation.
  */
 export async function POST(request: Request) {
-  const session = await auth();
+  const auth = await requireUserId();
+  if (auth.response) return auth.response;
 
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
-
-  const body = await request.json().catch(() => null);
-  const parsed = createCollectionSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: parsed.error.issues[0]?.message ?? "Invalid input",
-      },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(request, createCollectionSchema);
+  if (parsed.response) return parsed.response;
 
   if (isFeatureGatingEnabled()) {
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: auth.userId },
       select: { isPro: true },
     });
 
     if (!user?.isPro) {
-      const stats = await getCollectionStats(session.user.id);
+      const stats = await getCollectionStats(auth.userId);
       if (stats.total >= FREE_COLLECTION_LIMIT) {
         return NextResponse.json(
           { success: false, error: collectionLimitMessage() },
@@ -56,13 +41,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const collection = await createCollection(session.user.id, parsed.data);
+    const collection = await createCollection(auth.userId, parsed.data);
     return NextResponse.json({ success: true, data: collection });
   } catch (error) {
-    console.error("createCollection failed:", error);
-    return NextResponse.json(
-      { success: false, error: "Something went wrong. Please try again." },
-      { status: 500 },
-    );
+    return internalErrorResponse("createCollection", error);
   }
 }

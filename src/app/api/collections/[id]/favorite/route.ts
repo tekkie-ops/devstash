@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { internalErrorResponse, notFoundResponse } from "@/lib/api-response";
+import { requireUserId } from "@/lib/auth-guard";
 import { toggleCollectionFavorite } from "@/lib/db/collections";
 
 /**
@@ -13,33 +14,20 @@ export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
+  const auth = await requireUserId();
+  if (auth.response) return auth.response;
 
   const { id } = await params;
 
   try {
-    const collection = await toggleCollectionFavorite(session.user.id, id);
+    const collection = await toggleCollectionFavorite(auth.userId, id);
 
     if (!collection) {
-      return NextResponse.json(
-        { success: false, error: "Collection not found" },
-        { status: 404 },
-      );
+      return notFoundResponse("Collection");
     }
 
     return NextResponse.json({ success: true, data: collection });
   } catch (error) {
-    console.error("toggleCollectionFavorite failed:", error);
-    return NextResponse.json(
-      { success: false, error: "Something went wrong. Please try again." },
-      { status: 500 },
-    );
+    return internalErrorResponse("toggleCollectionFavorite", error);
   }
 }

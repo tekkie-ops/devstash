@@ -6,6 +6,7 @@ import { createVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/email/send-verification-email";
 import { isEmailVerificationEnabled } from "@/lib/email-verification";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { parseJsonBody } from "@/lib/api-response";
 
 export async function POST(request: Request) {
   const ip = getClientIp(request.headers);
@@ -14,15 +15,8 @@ export async function POST(request: Request) {
     return rateLimitResponse(rateLimit.reset);
   }
 
-  const body = await request.json().catch(() => null);
-  const parsed = registerSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseJsonBody(request, registerSchema);
+  if (parsed.response) return parsed.response;
 
   const { name, email, password } = parsed.data;
 

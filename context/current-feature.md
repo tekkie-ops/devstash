@@ -1,16 +1,30 @@
-# Current Feature
+# Refactor API Duplication
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Fixes from the 2026-09-20 `refactor-scanner` scan of `src/app/api/**/route.ts`, in order of impact:
+
+- Extract `requireUserId()` (or `requireSession()`) into a new `src/lib/auth-guard.ts` to replace the identical `auth()` → `session?.user?.id` check → `401 { success: false, error: "Unauthorized" }` boilerplate copy-pasted across 7 routes: `src/app/api/upload/route.ts`, `src/app/api/items/[id]/route.ts`, `src/app/api/items/[id]/download/route.ts`, `src/app/api/collections/route.ts`, `src/app/api/collections/[id]/route.ts` (PATCH and DELETE), and `src/app/api/collections/[id]/favorite/route.ts`. Returns either the resolved userId or a ready-to-return `NextResponse`, e.g. `const auth = await requireUserId(); if (auth.response) return auth.response;`. This also fixes a real drift: `items/[id]/download/route.ts` uses `Response.json` instead of `NextResponse.json` for the same 401 payload.
+- Extract `parseJsonBody<T>(request, schema)` into a new `src/lib/api-response.ts` to replace the identical "parse JSON body defensively → `schema.safeParse` → 400 with the first Zod issue message" block duplicated 6 times: `src/app/api/auth/forgot-password/route.ts`, `src/app/api/auth/register/route.ts`, `src/app/api/auth/resend-verification/route.ts`, `src/app/api/auth/reset-password/route.ts`, `src/app/api/collections/route.ts` (POST), and `src/app/api/collections/[id]/route.ts` (PATCH). Returns `{ data: T } | { response: NextResponse }`.
+- Extract `notFoundResponse(entity)` / `internalErrorResponse(context, error)` helpers (same `src/lib/api-response.ts`) to replace the collections-specific `500 { success: false, error: "Something went wrong. Please try again." }` catch block duplicated 4 times (`collections/route.ts` POST, `collections/[id]/route.ts` PATCH and DELETE, `collections/[id]/favorite/route.ts`) and the `404 { success: false, error: "Collection not found" }` block duplicated 3 times (`collections/[id]/route.ts` PATCH and DELETE, `collections/[id]/favorite/route.ts`).
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+The rate-limit calls preceding the JSON-body-parse block in the four auth routes are correctly *not* duplicated logic — they already share `checkRateLimit`/`getClientIp`/`rateLimitResponse` from `src/lib/rate-limit.ts`; only the body-parse/validation-error shaping after that point is unshared.
+
+Explicitly ruled out by the scan, not part of this feature: the item-vs-collection "ownership-check-then-mutate" pattern doesn't apply here — `items/[id]/route.ts` only has a `GET`, and the actual ownership-checked item mutations live in `src/actions/items.ts` (already deduped in the prior "Refactor Actions Duplication" pass), not in `src/app/api/items/**`. The Stripe webhook route (`src/app/api/webhooks/stripe/route.ts`) is structurally and functionally unlike every other route (no `auth()`, signature-based, single-purpose `syncSubscription` helper) and shares nothing worth extracting.
+
+Pure refactor — no behavior change intended. No existing unit tests cover `src/app/api/**/route.ts` directly (this project has never unit-tested API routes), so no test changes expected; verify via `npm run build`/`npm run lint` plus live Playwright/curl checks against the affected routes, consistent with how prior refactor passes in this project were verified.
+
+**Implemented:**
+- `requireUserId()` added to new `src/lib/auth-guard.ts`; used in all 7 routes (`upload`, `items/[id]`, `items/[id]/download`, `collections`, `collections/[id]` PATCH+DELETE, `collections/[id]/favorite`). Fixed the `Response.json`/`NextResponse.json` drift in the download route as part of the swap.
+- `parseJsonBody<T>()` added to new `src/lib/api-response.ts`; used in all 6 routes (the 4 auth routes plus `collections` POST and `collections/[id]` PATCH).
+- `notFoundResponse(entity)` / `internalErrorResponse(context, error)` added to the same file; used in the 3 collections routes that had the duplicated 404/500 boilerplate.
+- Verified via curl (unauthenticated): all 7 auth-gated routes return `401 {"success":false,"error":"Unauthorized"}`; all 4 auth routes' `parseJsonBody` validation returns correct 400s with the expected Zod messages. Verified via Playwright against the seeded dev database (signed in as `demo@devstash.io`, real `fetch` calls from the browser): `PATCH`/`DELETE`/favorite-toggle on a fake collection id all correctly returned `404 "Collection not found"`; `POST /api/collections` with a blank name correctly returned `400 "Name is required"`; a full create → edit → favorite-toggle → delete round trip on a real throwaway collection succeeded end-to-end with no net DB drift. Build, lint, and all 195 tests passed.
 
 ## History
 
