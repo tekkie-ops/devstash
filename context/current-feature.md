@@ -1,16 +1,32 @@
-# Current Feature
+# Refactor Lib Duplication
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Prioritized fixes from the 2026-09-20 `refactor-scanner` scan of `src/lib/**`:
+
+- Extract `toCollectionItemType(itemType: { id, name, icon, color })` into `src/lib/item-types.ts` (alongside `toLabel`/`SYSTEM_TYPE_ORDER`) to replace the identical 5-field Prisma `ItemType` → `CollectionItemType` mapping (`id`, `name`, `label: toLabel(name)`, `icon`, `color`) hand-written seven times: `src/lib/db/items.ts` (`toItemSummary`, `getItemsByTypeSlug`, `getCreatableItemTypes`, `getItemTypesWithCounts`, `getSearchableItems`), `src/lib/db/collections.ts` (`toCollectionSummary`), and `src/lib/db/profile.ts` (`getProfileStats`). Each call site spreads it (`{ ...toCollectionItemType(x), itemCount }` where an extra field like `itemCount` is needed).
+- Consolidate the "optional string: trim, blank → null" Zod helper, currently defined three times under two different names — `optionalTrimmedText` (`src/lib/validations/items.ts:4-10`), a byte-identical same-file duplicate named `optionalNonEmpty` (`src/lib/validations/items.ts:82-88`), and a third copy `optionalTrimmedText` in `src/lib/validations/collections.ts:4-10` — into a single exported helper in a new `src/lib/validations/shared.ts`, imported by both `items.ts` and `collections.ts`. Delete `items.ts`'s redundant `optionalNonEmpty` alias entirely.
+- Consolidate the "optional string, null/undefined → empty string" one-line Zod fragment (`z.string().nullish().transform((value) => value ?? "")`) repeated seven times in `src/lib/validations/ai.ts` into a single `const optionalToEmptyString = ...` defined once near the top of that file and reused across all four schemas.
+- Extract a parameterized `passwordsMatchRefinement(passwordField, confirmField)` helper in `src/lib/validations/auth.ts` to replace the "passwords must match" `.refine()` duplicated three times (`registerSchema`, `resetPasswordSchema`, `changePasswordSchema`), differing only in field names.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+Deliberately excluded from this pass, per explicit decision:
+- The "type breakdown" query+sort duplicated verbatim between `getItemTypesWithCounts` (`src/lib/db/items.ts`) and `getProfileStats`'s `typeBreakdown` (`src/lib/db/profile.ts`) — deferred because sharing it cleanly would first require migrating `getItemTypesWithCounts` off its internal `getDemoUserId()` call to an explicit `userId` param, a bigger change than this pass's scope.
+- `src/lib/tokens.ts`'s `createVerificationToken`/`createPasswordResetToken` sharing a delete-stale → generate → create-with-expiry body — the scan itself flagged this as optional, noting the current explicit duplication may be more readable than adding indirection for two ten-line functions.
+
+Pure refactor — no behavior change intended. `src/lib/**` is within this project's Vitest scope (server actions and utilities), so existing tests in `src/lib/validations/items.test.ts`, `src/lib/validations/collections.test.ts`, and `src/lib/validations/ai.test.ts` must still pass — these test schema behavior, not the internal helper names, so no test changes are expected, but verify by running `npm test` after each extraction.
+
+**Implemented:**
+- `toCollectionItemType()` added to `src/lib/item-types.ts` (the `CollectionItemType` interface moved there too, re-exported from `src/lib/db/collections.ts` so the four existing importers didn't need to change); replaces the 7 duplicate mappings in `src/lib/db/items.ts` (`toItemSummary`, `getItemsByTypeSlug`, `getCreatableItemTypes`, `getItemTypesWithCounts`, `getSearchableItems`), `src/lib/db/collections.ts` (`toCollectionSummary`), and `src/lib/db/profile.ts` (`getProfileStats`, whose `ProfileTypeBreakdown` now `extends CollectionItemType`).
+- `optionalTrimmedText` consolidated into new `src/lib/validations/shared.ts`, imported by both `items.ts` and `collections.ts`; deleted `items.ts`'s byte-identical same-file duplicate `optionalNonEmpty` (was used by `fileUrl`/`fileName`, now uses `optionalTrimmedText` directly).
+- `optionalToEmptyString` consolidated as a single local const in `src/lib/validations/ai.ts`, replacing 7 inline `z.string().nullish().transform((value) => value ?? "")` copies across all four AI schemas.
+- `passwordsMatchRefinement(passwordField, confirmField)` extracted in `src/lib/validations/auth.ts`, replacing the 3 duplicated `.refine()` blocks in `registerSchema`/`resetPasswordSchema`/`changePasswordSchema`. One type fix needed: the helper's `path` had to be typed `PropertyKey[]` explicitly since `as const` inferred a `readonly` tuple that Zod's `.refine()` params reject.
+- Verified live via Playwright against the seeded dev database (signed in as `demo@devstash.io`): `/profile`'s type breakdown (via `getProfileStats` → `toCollectionItemType`) rendered all 7 types with correct icons/counts; the register form's mismatched-password submission correctly showed "Passwords do not match" on the confirm field. No console errors. Build, lint, and all 195 tests passed.
 
 ## History
 

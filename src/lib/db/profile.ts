@@ -1,17 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { SYSTEM_TYPE_ORDER, toLabel } from "@/lib/item-types";
+import type { CollectionItemType } from "@/lib/item-types";
+import { SYSTEM_TYPE_ORDER, toCollectionItemType } from "@/lib/item-types";
 
 export interface ProfileAccount {
   hasPassword: boolean;
   createdAt: Date;
 }
 
-export interface ProfileTypeBreakdown {
-  id: string;
-  name: string;
-  label: string;
-  icon: string;
-  color: string;
+export interface ProfileTypeBreakdown extends CollectionItemType {
   itemCount: number;
 }
 
@@ -48,11 +44,7 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
 
   const typeBreakdown = types
     .map((type) => ({
-      id: type.id,
-      name: type.name,
-      label: toLabel(type.name),
-      icon: type.icon,
-      color: type.color,
+      ...toCollectionItemType(type),
       itemCount: type._count.items,
     }))
     .sort(

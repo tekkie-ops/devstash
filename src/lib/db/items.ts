@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { CollectionItemType } from "@/lib/db/collections";
 import { getDemoUserId } from "@/lib/db/user";
-import { SYSTEM_TYPE_ORDER, toLabel } from "@/lib/item-types";
+import { SYSTEM_TYPE_ORDER, toCollectionItemType, toLabel } from "@/lib/item-types";
 import { getSkip, ITEMS_PER_PAGE } from "@/lib/pagination";
 import { deleteR2Object, r2KeyFromUrl } from "@/lib/r2";
 import {
@@ -63,13 +63,7 @@ function toItemSummary(item: {
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     tags: item.tags.map(({ tag }) => tag.name),
-    type: {
-      id: item.itemType.id,
-      name: item.itemType.name,
-      label: toLabel(item.itemType.name),
-      icon: item.itemType.icon,
-      color: item.itemType.color,
-    },
+    type: toCollectionItemType(item.itemType),
     content: item.content,
     url: item.url,
     fileUrl: item.fileUrl,
@@ -169,13 +163,7 @@ export async function getItemsByTypeSlug(
   ]);
 
   return {
-    type: {
-      id: matched.id,
-      name: matched.name,
-      label: toLabel(matched.name),
-      icon: matched.icon,
-      color: matched.color,
-    },
+    type: toCollectionItemType(matched),
     items: items.map(toItemSummary),
     totalCount,
   };
@@ -220,13 +208,7 @@ export async function getCreatableItemTypes(): Promise<CollectionItemType[]> {
     types.find((type) => type.name === name),
   )
     .filter((type): type is NonNullable<typeof type> => type !== undefined)
-    .map((type) => ({
-      id: type.id,
-      name: type.name,
-      label: toLabel(type.name),
-      icon: type.icon,
-      color: type.color,
-    }));
+    .map(toCollectionItemType);
 }
 
 /**
@@ -529,11 +511,7 @@ export async function getItemTypesWithCounts(): Promise<ItemTypeSummary[]> {
 
   return types
     .map((type) => ({
-      id: type.id,
-      name: type.name,
-      label: toLabel(type.name),
-      icon: type.icon,
-      color: type.color,
+      ...toCollectionItemType(type),
       itemCount: type._count.items,
     }))
     .sort(
@@ -591,13 +569,7 @@ export async function getSearchableItems(
   return items.map((item) => ({
     id: item.id,
     title: item.title,
-    type: {
-      id: item.itemType.id,
-      name: item.itemType.name,
-      label: toLabel(item.itemType.name),
-      icon: item.itemType.icon,
-      color: item.itemType.color,
-    },
+    type: toCollectionItemType(item.itemType),
     preview: toPreview(item.description ?? item.content),
   }));
 }
