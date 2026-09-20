@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth-guard";
 import { putR2Object, r2PublicUrl, R2_BUCKET } from "@/lib/r2";
 import {
   buildObjectKey,
@@ -20,13 +20,8 @@ import {
  * fail fast.
  */
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { success: false, error: "Unauthorized" },
-      { status: 401 },
-    );
-  }
+  const auth = await requireUserId();
+  if (auth.response) return auth.response;
 
   if (!R2_BUCKET) {
     return NextResponse.json(

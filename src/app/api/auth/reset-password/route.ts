@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resetPasswordSchema } from "@/lib/validations/auth";
 import { PASSWORD_RESET_TOKEN_PREFIX } from "@/lib/tokens";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { parseJsonBody } from "@/lib/api-response";
 
 function invalidTokenResponse() {
   return NextResponse.json(
@@ -19,15 +20,8 @@ export async function POST(request: Request) {
     return rateLimitResponse(rateLimit.reset);
   }
 
-  const body = await request.json().catch(() => null);
-  const parsed = resetPasswordSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseJsonBody(request, resetPasswordSchema);
+  if (parsed.response) return parsed.response;
 
   const { token, password } = parsed.data;
   const record = await prisma.verificationToken.findUnique({ where: { token } });
