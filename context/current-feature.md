@@ -1,16 +1,26 @@
-# Current Feature
+# Refactor Actions Duplication
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Refactor `src/actions/**` to remove duplicate code found by the refactor-scanner agent:
+
+- Extract `isUserPro(userId: string): Promise<boolean>` into `src/lib/db/user.ts` (alongside the existing `getDemoUserId`) and use it to replace the copy-pasted `prisma.user.findUnique({ where: { id: session.user.id }, select: { isPro: true } })` Pro-status re-check in `createItem` (`src/actions/items.ts`) and all four AI actions (`generateAutoTags`, `generateDescription`, `explainCode`, `optimizePrompt` in `src/actions/ai.ts`).
+- Extract `requireAiAccess(userId: string, rateLimitKey: string): Promise<{ ok: true } | { ok: false; error: string }>` into a new `src/lib/ai-guard.ts`, covering the `isOpenAIConfigured()` check → Pro gate (via `isUserPro`) → `checkRateLimit`/`rateLimitExceededMessage` steps shared near-verbatim by all four AI actions in `src/actions/ai.ts`. Each action calls it once after its own `auth()`/Zod parse and returns early on `!ok.ok`.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+Found by the `refactor-scanner` agent scanning `src/actions/**` (2026-09-20). Two other opportunities were identified but are out of scope for this pass, deferred for later: a shared `formatActionError(label, error)` helper for the repeated generic catch-block (12 spots across `items.ts`/`ai.ts`/`billing.ts`/`editor-preferences.ts`), and a `requireNonBlankId(id)` guard for the identical blank-id check in four `items.ts` mutations.
+
+Pure refactor — no behavior change intended. No test changes were needed: `isUserPro`/`requireAiAccess` both call `prisma` via the same `@/lib/prisma` import the existing `src/actions/ai.test.ts`/`src/actions/items.test.ts` mocks already intercept, so the mocks stayed transparent to the new indirection.
+
+**Implemented:**
+- `isUserPro(userId)` added to `src/lib/db/user.ts`; used in `createItem` (`src/actions/items.ts`) and all four AI actions.
+- `requireAiAccess(userId, rateLimitKey)` added to new `src/lib/ai-guard.ts` (config check → Pro gate via `isUserPro` → rate limit); used in `generateAutoTags`/`generateDescription`/`explainCode`/`optimizePrompt` (`src/actions/ai.ts`).
+- Build, lint, and all 195 tests passed unchanged.
 
 ## History
 
