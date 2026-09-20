@@ -1,16 +1,34 @@
-# Current Feature
+# Refactor Components Duplication & Size
 
 ## Status
 
-<!-- Not Started | In Progress | Complete -->
+In Progress
 
 ## Goals
 
-<!-- Bullet points of what success looks like -->
+Two prioritized fixes from the 2026-09-20 `refactor-scanner` + `codebase-scanner` scan of `src/components/**` (both scans independently flagged the same root cause):
+
+- Extract `src/components/items/EditorAiActionButton.tsx` (props: `label`, `icon`, `loading`, `loadingLabel`, `disabled`, `onClick`, `isPro`) to replace the Pro-gated AI action button copy-pasted verbatim between `CodeEditor.tsx:267-312` (Explain) and `MarkdownEditor.tsx:159-204` (Optimize) — same Sparkles/Loader2 button, same Crown+`Tooltip` "AI features require Pro subscription" fallback, same `aria-disabled` (not `disabled`) comment; `MarkdownEditor.tsx:188` even comments "same fix as CodeEditor's Explain gating," meaning the duplication was already recognized and left unshared. Both call sites keep their own `handleExplain`/`handleOptimize` and loading state.
+- Split `src/components/items/CreateItemDialog.tsx` (344 lines, grown from ~280 as AI description/tag suggestions, collections, and file upload were added) into `CreateItemTypeSelector.tsx` (the type-toggle button row: `types`/`value`/`onChange`) and `CreateItemFields.tsx` (the description/language/content/file/url/tags field block, taking the per-type show-flags and value/onChange pairs) — mirroring the existing `ItemDrawer.tsx` → `ItemDrawerView.tsx`/`ItemDrawerEditForm.tsx` split. `CreateItemDialog.tsx` keeps only dialog chrome, form state, and the submit handler.
 
 ## Notes
 
-<!-- Additional context, constraints, or details from spec -->
+Also while touching `CodeEditor.tsx`: its `defineThemes` function (~80 lines of pure Monaco theme/color data, no component logic) should move to a sibling `src/components/items/codeEditorThemes.ts`, same rationale as the existing `toMonacoLanguage` extraction into `src/lib/languages.ts` — worth doing in the same pass as the `EditorAiActionButton` extraction since it's touching the same file.
+
+Deferred to a later pass, not part of this feature's goals:
+- Pricing cards markup duplicated between `homepage/PricingSection.tsx:29-122` and `billing/UpgradePricingCards.tsx:36-129` (both hardcode `$8`/`$72`/`25%` independently) → extract `src/components/billing/PricingCards.tsx`.
+- Fetch→JSON error-shaping has two silently-drifted variants: `CreateCollectionDialog`/`EditCollectionDialog`/`DeleteCollectionDialog` (has a `catch`) vs. `RegisterForm`/`ResetPasswordForm`/`ForgotPasswordForm` (missing a `catch` on the latter two — an actual latent bug: a network error surfaces as an unhandled rejection instead of a toast) → extract `fetchJson<T>()` in `src/lib/fetch-json.ts`.
+- Title+pin/favorite-icon row repeated across `ItemRow`, `ItemCard`, `ImageThumbnailCard`, `FileListRow` — the next layer of duplication left behind after `ItemStatusIcons` was extracted from the same 4 files.
+- Stripe redirect loading/toast sequence repeated 3x across `UpgradeButtons`, `UpgradePricingCards`, `BillingSection`.
+- `ChaosVisual.tsx` (265 lines) — its `CHAOS_ICONS` array (~80 lines of static SVG data) should move to a sibling `chaosIcons.tsx`.
+
+Pure refactor — no behavior change intended. Should not need new unit tests (components are out of this project's Vitest scope, same as prior component-extraction features).
+
+**Implemented:**
+- `src/components/items/EditorAiActionButton.tsx` — shared Pro-gated AI action button (active button or Crown+Tooltip fallback), used by `CodeEditor.tsx`'s Explain and `MarkdownEditor.tsx`'s Optimize.
+- `src/components/items/codeEditorThemes.ts` — `MONACO_THEME_NAMES` + `defineCodeEditorThemes` extracted out of `CodeEditor.tsx`.
+- `src/components/items/CreateItemTypeSelector.tsx` and `src/components/items/CreateItemFields.tsx` — split out of `CreateItemDialog.tsx`, which now owns only dialog chrome, Title, form state, and the submit handler.
+- Verified live via Playwright against the seeded dev database (signed in as `demo@devstash.io`): New Item dialog renders correctly and switches type-specific fields correctly (Snippets → Monaco Content + Language, Prompts → Markdown Write/Preview, no Language); the drawer's Explain (snippet) and Optimize (prompt) buttons both render via the shared component, including the Crown+Tooltip free-user fallback (confirmed via real `PointerEvent`s, tooltip text "AI features require Pro subscription"); Monaco syntax highlighting/theme intact. No console errors or warnings. Build, lint, and all 195 tests passed.
 
 ## History
 

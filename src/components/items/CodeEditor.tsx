@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Copy, Crown, Loader2, Sparkles } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -12,15 +12,10 @@ import type { editor } from "monaco-editor";
 
 import { explainCode } from "@/actions/ai";
 import { useEditorPreferences } from "@/components/settings/EditorPreferencesContext";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { defineCodeEditorThemes, MONACO_THEME_NAMES } from "@/components/items/codeEditorThemes";
+import { EditorAiActionButton } from "@/components/items/EditorAiActionButton";
 import { toMonacoLanguage } from "@/lib/languages";
 import { cn } from "@/lib/utils";
-import type { EditorPreferences } from "@/lib/validations/editor-preferences";
 
 /**
  * Monaco Editor, loaded on the client only. Used for code-bearing item types
@@ -40,91 +35,6 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 
 const MIN_HEIGHT = 96;
 const MAX_HEIGHT = 400;
-
-/** Maps an EditorPreferences theme id to the Monaco theme name defined in defineThemes. */
-const MONACO_THEME_NAMES: Record<EditorPreferences["theme"], string> = {
-  "vs-dark": "devstash-vs-dark",
-  monokai: "devstash-monokai",
-  "github-dark": "devstash-github-dark",
-};
-
-function defineThemes(monaco: Parameters<BeforeMount>[0]) {
-  monaco.editor.defineTheme(MONACO_THEME_NAMES["vs-dark"], {
-    base: "vs-dark",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editor.background": "#0d0d0d",
-      "editorGutter.background": "#0d0d0d",
-      "editorLineNumber.foreground": "#4b4b4b",
-      "editorLineNumber.activeForeground": "#a1a1a1",
-      "editor.lineHighlightBackground": "#ffffff0a",
-      "editor.lineHighlightBorder": "#00000000",
-      "editorWidget.background": "#1a1a1a",
-      "editorIndentGuide.background1": "#ffffff14",
-      "scrollbar.shadow": "#00000000",
-      "scrollbarSlider.background": "#ffffff1f",
-      "scrollbarSlider.hoverBackground": "#ffffff33",
-      "scrollbarSlider.activeBackground": "#ffffff4d",
-    },
-  });
-
-  monaco.editor.defineTheme(MONACO_THEME_NAMES.monokai, {
-    base: "vs-dark",
-    inherit: true,
-    rules: [
-      { token: "comment", foreground: "75715e" },
-      { token: "string", foreground: "e6db74" },
-      { token: "keyword", foreground: "f92672" },
-      { token: "number", foreground: "ae81ff" },
-      { token: "type", foreground: "66d9ef", fontStyle: "italic" },
-      { token: "function", foreground: "a6e22e" },
-      { token: "variable", foreground: "f8f8f2" },
-    ],
-    colors: {
-      "editor.background": "#272822",
-      "editorGutter.background": "#272822",
-      "editorLineNumber.foreground": "#75715e",
-      "editorLineNumber.activeForeground": "#f8f8f2",
-      "editor.lineHighlightBackground": "#3e3d32",
-      "editor.lineHighlightBorder": "#00000000",
-      "editorWidget.background": "#3e3d32",
-      "editorIndentGuide.background1": "#ffffff14",
-      "scrollbar.shadow": "#00000000",
-      "scrollbarSlider.background": "#ffffff1f",
-      "scrollbarSlider.hoverBackground": "#ffffff33",
-      "scrollbarSlider.activeBackground": "#ffffff4d",
-    },
-  });
-
-  monaco.editor.defineTheme(MONACO_THEME_NAMES["github-dark"], {
-    base: "vs-dark",
-    inherit: true,
-    rules: [
-      { token: "comment", foreground: "8b949e" },
-      { token: "string", foreground: "a5d6ff" },
-      { token: "keyword", foreground: "ff7b72" },
-      { token: "number", foreground: "79c0ff" },
-      { token: "type", foreground: "ffa657" },
-      { token: "function", foreground: "d2a8ff" },
-      { token: "variable", foreground: "c9d1d9" },
-    ],
-    colors: {
-      "editor.background": "#0d1117",
-      "editorGutter.background": "#0d1117",
-      "editorLineNumber.foreground": "#6e7681",
-      "editorLineNumber.activeForeground": "#c9d1d9",
-      "editor.lineHighlightBackground": "#161b22",
-      "editor.lineHighlightBorder": "#00000000",
-      "editorWidget.background": "#161b22",
-      "editorIndentGuide.background1": "#ffffff14",
-      "scrollbar.shadow": "#00000000",
-      "scrollbarSlider.background": "#ffffff1f",
-      "scrollbarSlider.hoverBackground": "#ffffff33",
-      "scrollbarSlider.activeBackground": "#ffffff4d",
-    },
-  });
-}
 
 interface CodeEditorProps {
   value: string;
@@ -192,7 +102,7 @@ export function CodeEditor({
   );
 
   const handleBeforeMount = useCallback<BeforeMount>((monaco) => {
-    defineThemes(monaco);
+    defineCodeEditorThemes(monaco);
   }, []);
 
   const handleMount = useCallback<OnMount>((editorInstance) => {
@@ -272,44 +182,17 @@ export function CodeEditor({
             <Copy className="size-3.5" />
             Copy
           </button>
-          {explainable &&
-            (isPro ? (
-              <button
-                type="button"
-                onClick={handleExplain}
-                disabled={explaining || !value.trim()}
-                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-              >
-                {explaining ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="size-3.5" />
-                )}
-                {explaining ? "Explaining…" : "Explain"}
-              </button>
-            ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {/* aria-disabled, not the disabled attribute — a natively
-                        disabled button fires no pointer/focus events, so the
-                        tooltip would never open. There's no onClick handler
-                        here regardless, so it's already inert either way. */}
-                    <button
-                      type="button"
-                      aria-disabled="true"
-                      className="inline-flex cursor-not-allowed items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground opacity-70"
-                    >
-                      <Crown className="size-3.5" />
-                      Explain
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    AI features require Pro subscription
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ))}
+          {explainable && (
+            <EditorAiActionButton
+              icon={Sparkles}
+              label="Explain"
+              loadingLabel="Explaining…"
+              loading={explaining}
+              disabled={explaining || !value.trim()}
+              onClick={handleExplain}
+              isPro={isPro}
+            />
+          )}
         </div>
       </div>
 
